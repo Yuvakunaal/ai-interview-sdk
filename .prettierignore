@@ -1,0 +1,8 @@
+dist
+coverage
+.turbo
+.next
+node_modules
+pnpm-lock.yaml
+CHANGELOG.md
+Ai interview sdk idea.md
