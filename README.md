@@ -4,10 +4,13 @@ Open-source TypeScript/React infrastructure for embedding AI-powered
 interviews into any application — with your own AI keys, backend, and
 database.
 
-> **Status:** early scaffold (Phase 1 of the build). No `@interview-sdk/*`
-> package has real functionality yet — see [Build Status](#build-status)
-> below. This README will get its full public-facing pass (badges, quick
-> start, positioning) once the SDK actually works end-to-end.
+> **Status:** mid-build (through Phase 3). `@interview-sdk/core` (flow,
+> evaluation, rubric, follow-up engines) and all 5 provider adapters
+> (OpenAI, Claude, Gemini, Deepgram, ElevenLabs) are implemented and tested —
+> see [Build Status](#build-status) below. `react`, `server`, `cli`, and
+> `coding` are still scaffold-only. This README will get its full
+> public-facing pass (badges, quick start, positioning) once the SDK
+> actually works end-to-end.
 
 ## What this is — and isn't
 
@@ -66,8 +69,8 @@ increment:
 
 - [x] Phase 0 — Plan
 - [x] Phase 1 — Repo scaffolding (this state)
-- [ ] Phase 2 — `@interview-sdk/core`
-- [ ] Phase 3 — Adapters
+- [x] Phase 2 — `@interview-sdk/core`
+- [x] Phase 3 — Adapters
 - [ ] Phase 4 — `@interview-sdk/react`
 - [ ] Phase 5 — `@interview-sdk/server`
 - [ ] Phase 6 — `@interview-sdk/cli`

@@ -51,6 +51,7 @@
     "adapter"
   ],
   "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.56.0",
     "@interview-sdk/core": "workspace:*"
   }
 }

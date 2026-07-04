@@ -51,6 +51,7 @@
     "adapter"
   ],
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
     "@interview-sdk/core": "workspace:*"
   }
 }

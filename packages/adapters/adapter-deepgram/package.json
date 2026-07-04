@@ -51,6 +51,7 @@
     "adapter"
   ],
   "dependencies": {
+    "@deepgram/sdk": "^5.5.0",
     "@interview-sdk/core": "workspace:*"
   }
 }

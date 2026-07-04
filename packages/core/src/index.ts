@@ -5,6 +5,8 @@ export * from './events.js';
 export * from './adapter/types.js';
 export * from './adapter/registry.js';
 export * from './adapter/parse-json.js';
+export * from './adapter/retry.js';
+export * from './adapter/failover.js';
 
 export * from './rubric/rubric.js';
 

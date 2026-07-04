@@ -1,10 +1,10 @@
 # @interview-sdk/adapter-elevenlabs
 
-ElevenLabs voice (text-to-speech) provider adapter for @interview-sdk/core.
-
-> **Status:** scaffold only. Real implementation lands in Phase 3 of the
-> build, against the current provider SDK/docs (verified then, not assumed
-> from memory).
+ElevenLabs voice provider adapter for `@interview-sdk/core`, built on
+`@elevenlabs/elevenlabs-js` — the current package (the unscoped `elevenlabs`
+package is deprecated and has moved here). Implements both `synthesize()`
+(text-to-speech, the primary use case) and `transcribe()` (ElevenLabs also
+ships speech-to-text).
 
 ## Install
 
@@ -12,6 +12,39 @@ ElevenLabs voice (text-to-speech) provider adapter for @interview-sdk/core.
 npm install @interview-sdk/core @interview-sdk/adapter-elevenlabs
 ```
 
-This package implements the `AIProviderAdapter` / `VoiceProviderAdapter`
-interface from `@interview-sdk/core` and registers itself with the Adapter
-Registry, so it's a one-line config swap for any other adapter.
+## Usage
+
+```ts
+import { AdapterRegistry } from '@interview-sdk/core';
+import { ElevenLabsAdapter } from '@interview-sdk/adapter-elevenlabs';
+
+const registry = new AdapterRegistry();
+registry.registerVoiceProvider(new ElevenLabsAdapter({ apiKey: process.env.ELEVENLABS_API_KEY }));
+```
+
+`ElevenLabsAdapter` accepts an optional `voiceId` (defaults to ElevenLabs'
+prebuilt "Rachel" voice), `model` (TTS, defaults to `eleven_multilingual_v2`),
+`transcribeModel` (STT, defaults to `scribe_v2`), and an optional
+pre-configured `client` for testing.
+
+## Behavior
+
+- `synthesize(text)` requests `outputFormat: 'mp3_44100_128'` explicitly (so
+  the adapter can confidently report `mimeType: 'audio/mpeg'`) and drains the
+  SDK's `ReadableStream<Uint8Array>` response into a single `ArrayBuffer`.
+- `transcribe(audio)` passes the raw `ArrayBuffer`/`Uint8Array` directly to
+  `speechToText.convert` — no stream wrapper needed, the SDK's `Uploadable`
+  type accepts binary data natively.
+- Normalizes every `ElevenLabsError` (a base class with a numeric
+  `.statusCode`; typed subclasses exist per status but this adapter branches
+  on the code directly, matching the Deepgram adapter's pattern) onto the
+  shared `Provider*Error` taxonomy from `@interview-sdk/core`.
+- Auto-retries 408/409/429/5xx by default (`maxRetries: 2`), matching
+  Claude's and OpenAI's SDK behavior out of the box.
+
+## Verified against
+
+`@elevenlabs/elevenlabs-js@2.56.0`, current as of 2026-07-04 — the package
+itself was renamed from unscoped `elevenlabs`; model names and output
+formats shift quickly. Re-check before assuming this stays accurate for
+long.
