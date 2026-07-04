@@ -4,13 +4,15 @@ Open-source TypeScript/React infrastructure for embedding AI-powered
 interviews into any application — with your own AI keys, backend, and
 database.
 
-> **Status:** mid-build (through Phase 3). `@interview-sdk/core` (flow,
-> evaluation, rubric, follow-up engines) and all 5 provider adapters
-> (OpenAI, Claude, Gemini, Deepgram, ElevenLabs) are implemented and tested —
-> see [Build Status](#build-status) below. `react`, `server`, `cli`, and
-> `coding` are still scaffold-only. This README will get its full
-> public-facing pass (badges, quick start, positioning) once the SDK
-> actually works end-to-end.
+> **Status:** mid-build (through Phase 4). `@interview-sdk/core` (flow,
+> evaluation, rubric, follow-up engines), all 5 provider adapters
+> (OpenAI, Claude, Gemini, Deepgram, ElevenLabs), and `@interview-sdk/react`
+> (`InterviewWidget`, `MicButton`, `QuestionCard`, `ReportCard`,
+> `TranscriptViewer`, `ScoreSummary`) are implemented and tested — see
+> [Build Status](#build-status) below. `server`, `cli`, and `coding` are
+> still scaffold-only. This README will get its full public-facing pass
+> (badges, quick start, positioning) once the SDK actually works
+> end-to-end.
 
 ## What this is — and isn't
 
@@ -71,7 +73,7 @@ increment:
 - [x] Phase 1 — Repo scaffolding (this state)
 - [x] Phase 2 — `@interview-sdk/core`
 - [x] Phase 3 — Adapters
-- [ ] Phase 4 — `@interview-sdk/react`
+- [x] Phase 4 — `@interview-sdk/react`
 - [ ] Phase 5 — `@interview-sdk/server`
 - [ ] Phase 6 — `@interview-sdk/cli`
 - [ ] Phase 7 — Coding Interview Mode
