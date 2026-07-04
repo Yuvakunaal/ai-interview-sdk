@@ -5,9 +5,6 @@ AI-powered interviews. This is the shared logic layer used by both
 `@interview-sdk/react` (client-side / prototyping) and `@interview-sdk/server`
 (production).
 
-> **Status:** scaffold only. The flow engine, evaluation engine, rubric
-> engine, and follow-up engine land in Phase 2 of the build.
-
 ## Install
 
 ```bash
@@ -16,12 +13,86 @@ npm install @interview-sdk/core
 
 ## What lives here
 
-- Flow engine (session/question state machine)
-- Evaluation engine (semantic scoring, concept coverage)
-- Rubric engine (weighted dimension scoring)
-- Dynamic follow-up engine
-- The `AIProviderAdapter` / `VoiceProviderAdapter` interfaces and the Adapter
-  Registry that `@interview-sdk/adapter-*` packages implement
+- **Flow engine** (`InterviewFlowEngine`) — session state machine: start /
+  pause / resume / advance, duplicate-submission prevention, session
+  expiration, and `getState()`/`fromState()` for auto-save and resume after
+  refresh/disconnect.
+- **Evaluation engine** (`EvaluationEngine`) — calls an `AIProviderAdapter`
+  for semantic (not keyword) scoring, concept coverage, contradiction
+  detection across turns, and hybrid AI + answer-key scoring. Deterministic
+  short-circuits (no AI call) for skipped/silent/empty answers.
+- **Rubric engine** (`defineRubric`, `scoreRubric`) — developer-defined
+  weighted dimensions, fails loud on empty/duplicate/invalid-weight configs,
+  normalizes weights, computes a weighted total + per-dimension breakdown.
+- **Follow-up engine** (`FollowUpEngine`) — dynamic generation via an
+  adapter, max-depth limits, repeat-prevention (token-similarity check, no
+  extra AI call), difficulty scaling, developer-defined branching (canned
+  follow-ups for specific missed concepts, tried before an AI call).
+- **Adapter Registry** (`AdapterRegistry`) and the `AIProviderAdapter` /
+  `VoiceProviderAdapter` interfaces that `@interview-sdk/adapter-*` packages
+  implement — one-line provider swaps.
+- **Developer configuration validation** (`validateInterviewConfig`) — fails
+  loud (collects every issue, throws once) on empty questions, missing
+  rubric, invalid weights, duplicate questions, invalid webhook URLs, and
+  invalid voice/language/difficulty settings.
+- A typed event emitter (`InterviewEventEmitter`) for session lifecycle
+  events, so developers can pipe into their own analytics.
 
 This package has no dependency on React, a specific AI provider, or a
-specific backend framework — it's pure TypeScript.
+specific backend framework — it's pure TypeScript, and works in both Node
+and the browser.
+
+## Security
+
+All candidate free text is untrusted input. Every prompt this package builds
+(`buildEvaluationRequest`, `buildFollowUpRequest`) carries developer-authored
+content (rubric, question, concepts, answer key) in the `system` message and
+candidate-provided text in its own isolated `user` message — never
+string-concatenated together — to mitigate prompt injection.
+
+## Example
+
+```ts
+import {
+  AdapterRegistry,
+  InterviewFlowEngine,
+  EvaluationEngine,
+  FollowUpEngine,
+  defineRubric,
+  validateInterviewConfig,
+} from '@interview-sdk/core';
+
+const config = {
+  questions: [
+    {
+      id: 'q1',
+      prompt: 'Explain how a hash map works.',
+      concepts: ['hashing', 'collision resolution'],
+    },
+  ],
+  rubric: [
+    { id: 'technical', label: 'Technical', weight: 3 },
+    { id: 'communication', label: 'Communication', weight: 1 },
+  ],
+};
+validateInterviewConfig(config);
+
+const rubric = defineRubric(config.rubric);
+const registry = new AdapterRegistry();
+registry.registerAIProvider(/* an @interview-sdk/adapter-* instance */);
+
+const flow = new InterviewFlowEngine({ questions: config.questions });
+flow.start();
+flow.submitAnswer({ text: 'A hash map hashes keys into buckets.' });
+
+const evaluation = await new EvaluationEngine().evaluate({
+  question: flow.currentQuestion()!,
+  rubric,
+  answer: flow.getState().answers.at(-1)!,
+  adapter: registry.getAIProvider('openai'),
+});
+```
+
+See the source under `src/` — every engine ships with its own test suite
+covering the product spec's edge-case list for Evaluation, Follow-Up, and
+Developer Configuration.
