@@ -11,8 +11,8 @@ pnpm workspaces + Turborepo.
 ## Getting Started
 
 ```bash
-git clone https://github.com/interview-sdk/interview-sdk.git
-cd interview-sdk
+git clone https://github.com/Yuvakunaal/ai-interview-sdk.git
+cd ai-interview-sdk
 pnpm install
 pnpm build
 pnpm test

@@ -42,7 +42,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/interview-sdk/interview-sdk.git",
+    "url": "https://github.com/Yuvakunaal/ai-interview-sdk.git",
     "directory": "packages/react"
   },
   "keywords": [

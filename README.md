@@ -18,25 +18,25 @@ database.
 ## Zero-Infra Guarantee
 
 The maintainers never pay for backend compute or storage — not at 10 users,
-not at 10,000. `@interview-sdk/server` runs on *your* infrastructure. The
-Interview Simulator and Bias Testing Harness run locally or in *your* CI. The
+not at 10,000. `@interview-sdk/server` runs on _your_ infrastructure. The
+Interview Simulator and Bias Testing Harness run locally or in _your_ CI. The
 only maintainer spend is the domain name. See [CONTRIBUTING.md](./CONTRIBUTING.md)
 for what this means for anyone proposing a new feature.
 
 ## Packages
 
-| Package | Description |
-|---|---|
-| [`@interview-sdk/core`](./packages/core) | Flow, evaluation, rubric, and follow-up engine |
-| [`@interview-sdk/react`](./packages/react) | React components and hooks |
-| [`@interview-sdk/server`](./packages/server) | Production-mode scoring and key isolation |
-| [`@interview-sdk/coding`](./packages/coding) | Sandboxed code execution for Coding Interview Mode |
-| [`@interview-sdk/cli`](./packages/cli) | Scaffolding, Interview Simulator, Bias Harness |
-| [`@interview-sdk/adapter-openai`](./packages/adapters/adapter-openai) | OpenAI provider adapter |
-| [`@interview-sdk/adapter-claude`](./packages/adapters/adapter-claude) | Anthropic Claude provider adapter |
-| [`@interview-sdk/adapter-gemini`](./packages/adapters/adapter-gemini) | Google Gemini provider adapter |
-| [`@interview-sdk/adapter-deepgram`](./packages/adapters/adapter-deepgram) | Deepgram voice provider adapter |
-| [`@interview-sdk/adapter-elevenlabs`](./packages/adapters/adapter-elevenlabs) | ElevenLabs voice provider adapter |
+| Package                                                                       | Description                                        |
+| ----------------------------------------------------------------------------- | -------------------------------------------------- |
+| [`@interview-sdk/core`](./packages/core)                                      | Flow, evaluation, rubric, and follow-up engine     |
+| [`@interview-sdk/react`](./packages/react)                                    | React components and hooks                         |
+| [`@interview-sdk/server`](./packages/server)                                  | Production-mode scoring and key isolation          |
+| [`@interview-sdk/coding`](./packages/coding)                                  | Sandboxed code execution for Coding Interview Mode |
+| [`@interview-sdk/cli`](./packages/cli)                                        | Scaffolding, Interview Simulator, Bias Harness     |
+| [`@interview-sdk/adapter-openai`](./packages/adapters/adapter-openai)         | OpenAI provider adapter                            |
+| [`@interview-sdk/adapter-claude`](./packages/adapters/adapter-claude)         | Anthropic Claude provider adapter                  |
+| [`@interview-sdk/adapter-gemini`](./packages/adapters/adapter-gemini)         | Google Gemini provider adapter                     |
+| [`@interview-sdk/adapter-deepgram`](./packages/adapters/adapter-deepgram)     | Deepgram voice provider adapter                    |
+| [`@interview-sdk/adapter-elevenlabs`](./packages/adapters/adapter-elevenlabs) | ElevenLabs voice provider adapter                  |
 
 ## Architecture
 
