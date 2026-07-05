@@ -53,6 +53,11 @@
     "cli"
   ],
   "dependencies": {
-    "@interview-sdk/core": "workspace:*"
+    "@interview-sdk/core": "workspace:*",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
   }
 }
