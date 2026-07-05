@@ -4,17 +4,19 @@ Open-source TypeScript/React infrastructure for embedding AI-powered
 interviews into any application — with your own AI keys, backend, and
 database.
 
-> **Status:** mid-build (through Phase 7). `@interview-sdk/core` (flow,
+> **Status:** mid-build (through Phase 8). `@interview-sdk/core` (flow,
 > evaluation, rubric, follow-up engines), all 5 provider adapters
 > (OpenAI, Claude, Gemini, Deepgram, ElevenLabs), `@interview-sdk/react`
 > (`InterviewWidget`, `MicButton`, `QuestionCard`, `ReportCard`,
 > `TranscriptViewer`, `ScoreSummary`), `@interview-sdk/server`
 > (production-mode evaluation, score signing, HMAC-signed webhooks),
-> `@interview-sdk/cli` (`init`, `simulate`, `bias-harness`, `pack`), and
+> `@interview-sdk/cli` (`init`, `simulate`, `bias-harness`, `pack`),
 > `@interview-sdk/coding` (sandboxed code execution, partial-credit
-> scoring, complexity heuristics for Coding Interview Mode) are
-> implemented and tested — see [Build Status](#build-status) below. This
-> README will get its full public-facing pass (badges, quick start,
+> scoring, complexity heuristics for Coding Interview Mode), the
+> [docs site](./packages/docs), and a runnable
+> [Server Mode Next.js example](./packages/examples/server-mode-nextjs)
+> are implemented and tested — see [Build Status](#build-status) below.
+> This README will get its full public-facing pass (badges, quick start,
 > positioning) once the SDK actually works end-to-end.
 
 ## What this is — and isn't
@@ -45,6 +47,8 @@ for what this means for anyone proposing a new feature.
 | [`@interview-sdk/adapter-gemini`](./packages/adapters/adapter-gemini)         | Google Gemini provider adapter                     |
 | [`@interview-sdk/adapter-deepgram`](./packages/adapters/adapter-deepgram)     | Deepgram voice provider adapter                    |
 | [`@interview-sdk/adapter-elevenlabs`](./packages/adapters/adapter-elevenlabs) | ElevenLabs voice provider adapter                  |
+| [`docs`](./packages/docs)                                                    | Documentation site (static Next.js export)         |
+| [`examples/server-mode-nextjs`](./packages/examples/server-mode-nextjs)      | Runnable Server Mode example (Next.js)             |
 
 ## Architecture
 
@@ -80,7 +84,7 @@ increment:
 - [x] Phase 5 — `@interview-sdk/server`
 - [x] Phase 6 — `@interview-sdk/cli`
 - [x] Phase 7 — Coding Interview Mode
-- [ ] Phase 8 — Docs site + examples
+- [x] Phase 8 — Docs site + examples
 - [ ] Phase 9 — Final pass (edge-case coverage table, guardrail re-verification, README polish)
 
 ## Development

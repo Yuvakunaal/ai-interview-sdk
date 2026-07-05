@@ -1,0 +1,23 @@
+{
+  "name": "@interview-sdk/docs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Documentation site for the AI Interview SDK — static Next.js export, hosted free (Vercel/Netlify/GitHub Pages) per the Zero-Infra Guarantee.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^16.2.10",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
+  }
+}
