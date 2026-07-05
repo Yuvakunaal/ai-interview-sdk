@@ -23,7 +23,11 @@ import { OpenAIAdapter } from '@interview-sdk/adapter-openai';
 const adapter = new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY });
 
 const questions = [
-  { id: 'q1', prompt: 'Explain how hash maps handle collisions.', concepts: ['hashing', 'collisions'] },
+  {
+    id: 'q1',
+    prompt: 'Explain how hash maps handle collisions.',
+    concepts: ['hashing', 'collisions'],
+  },
   { id: 'q2', prompt: 'Walk me through how you would design a URL shortener.' },
 ];
 
