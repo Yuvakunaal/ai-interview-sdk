@@ -1,5 +1,7 @@
+import type { SynthesisResult } from '@interview-sdk/core';
 import { useId, useState } from 'react';
 import { MicButton, type AudioRecorder } from './MicButton.js';
+import { QuestionAudio } from './QuestionAudio.js';
 
 export interface QuestionCardProps {
   prompt: string;
@@ -18,6 +20,13 @@ export interface QuestionCardProps {
    * always present regardless of this prop).
    */
   transcribe?: (audio: Blob) => Promise<string>;
+  /**
+   * Enables speaking the prompt aloud (autoplayed, with a manual
+   * play/replay fallback) — typically a VoiceProviderAdapter's
+   * synthesize(). Omit for a silent, text-only prompt (the accessible
+   * default — the prompt is always shown as text regardless of this prop).
+   */
+  synthesize?: (text: string) => Promise<SynthesisResult>;
   onVoiceError?: (error: Error) => void;
   /** Forwarded to MicButton; injectable for testing or a custom capture backend. */
   createRecorder?: () => Promise<AudioRecorder>;
@@ -35,6 +44,7 @@ export function QuestionCard({
   isSubmitting = false,
   disabled = false,
   transcribe,
+  synthesize,
   onVoiceError,
   createRecorder,
 }: QuestionCardProps) {
@@ -56,24 +66,31 @@ export function QuestionCard({
   };
 
   return (
-    <section aria-labelledby={promptId}>
-      <p>
+    <section className="isdk-question-card" aria-labelledby={promptId}>
+      <p className="isdk-question-card__meta">
         Question {questionNumber} of {totalQuestions}
         {isFollowUp ? ' — follow-up' : ''}
       </p>
-      <h2 id={promptId} aria-live="polite">
+      <h2 className="isdk-question-card__prompt" id={promptId} aria-live="polite">
         {prompt}
       </h2>
 
+      {synthesize && (
+        <QuestionAudio key={prompt} text={prompt} synthesize={synthesize} onError={onVoiceError} />
+      )}
+
       {hint && (
-        <p role="note" aria-label="Hint">
+        <p className="isdk-question-card__hint" role="note" aria-label="Hint">
           {hint}
         </p>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <label htmlFor={textareaId}>Your answer</label>
+      <form className="isdk-question-card__form" onSubmit={handleSubmit}>
+        <label className="isdk-question-card__label" htmlFor={textareaId}>
+          Your answer
+        </label>
         <textarea
+          className="isdk-question-card__textarea"
           id={textareaId}
           value={answerText}
           onChange={(event) => setAnswerText(event.target.value)}
@@ -91,17 +108,27 @@ export function QuestionCard({
           />
         )}
 
-        <div>
-          <button type="submit" disabled={isBusy}>
+        <div className="isdk-question-card__actions">
+          <button className="isdk-btn isdk-btn--primary" type="submit" disabled={isBusy}>
             Submit answer
           </button>
           {onRequestHint && (
-            <button type="button" onClick={onRequestHint} disabled={isBusy}>
+            <button
+              className="isdk-btn isdk-btn--secondary"
+              type="button"
+              onClick={onRequestHint}
+              disabled={isBusy}
+            >
               Request a hint
             </button>
           )}
           {onSkip && (
-            <button type="button" onClick={onSkip} disabled={isBusy}>
+            <button
+              className="isdk-btn isdk-btn--secondary"
+              type="button"
+              onClick={onSkip}
+              disabled={isBusy}
+            >
               Skip question
             </button>
           )}

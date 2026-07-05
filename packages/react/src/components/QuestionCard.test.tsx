@@ -177,4 +177,49 @@ describe('QuestionCard', () => {
       expect(screen.getByLabelText('Your answer')).toHaveValue('it uses buckets'),
     );
   });
+
+  it('does not speak the prompt in silent mode (no synthesize prop)', () => {
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /play question/i })).not.toBeInTheDocument();
+  });
+
+  it('speaks the prompt when synthesize is provided', async () => {
+    const playSpy = vi
+      .spyOn(window.HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined);
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:fake-url'),
+      revokeObjectURL: vi.fn(),
+    });
+    const synthesize = vi.fn(async () => ({
+      audio: new ArrayBuffer(4),
+      mimeType: 'audio/mpeg',
+    }));
+
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        synthesize={synthesize}
+      />,
+    );
+
+    await waitFor(() => expect(synthesize).toHaveBeenCalledWith('Explain hash maps.'));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Replay question' })).toBeInTheDocument(),
+    );
+
+    playSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
 });

@@ -1,4 +1,9 @@
-import type { AIProviderAdapter, Question, RubricDimensionInput } from '@interview-sdk/core';
+import type {
+  AIProviderAdapter,
+  Question,
+  RubricDimensionInput,
+  SynthesisResult,
+} from '@interview-sdk/core';
 import { defineRubric, validateInterviewConfig } from '@interview-sdk/core';
 import { useMemo, useState } from 'react';
 import { useInterview, type UseInterviewResult } from '../hooks/useInterview.js';
@@ -26,6 +31,8 @@ export interface InterviewWidgetProps {
   onSessionEnd?: (report: InterviewReport) => void;
   /** Enables the mic button; omit for text-only mode (the accessible default). */
   transcribe?: (audio: Blob) => Promise<string>;
+  /** Speaks each question/follow-up aloud; omit for a silent, text-only prompt (the accessible default). */
+  synthesize?: (text: string) => Promise<SynthesisResult>;
   onVoiceError?: (error: Error) => void;
   /**
    * Client Mode exposes AI keys in the browser and lets scores be computed
@@ -68,6 +75,7 @@ export function InterviewWidget({
   sessionTimeoutMs,
   onSessionEnd,
   transcribe,
+  synthesize,
   onVoiceError,
   allowClientModeInProduction,
 }: InterviewWidgetProps) {
@@ -116,8 +124,8 @@ export function InterviewWidget({
 
   if (interview.status === 'not_started') {
     return (
-      <div>
-        <button type="button" onClick={interview.start}>
+      <div className="isdk-widget isdk-widget--start">
+        <button className="isdk-btn isdk-btn--primary" type="button" onClick={interview.start}>
           Start interview
         </button>
       </div>
@@ -125,18 +133,22 @@ export function InterviewWidget({
   }
 
   return (
-    <div>
+    <div className="isdk-widget">
       {interview.error && (
-        <div role="alert">
+        <div className="isdk-widget__error" role="alert">
           <p>{interview.error.message}</p>
-          <button type="button" onClick={() => void interview.retryLastAnswer()}>
+          <button
+            className="isdk-btn isdk-btn--secondary"
+            type="button"
+            onClick={() => void interview.retryLastAnswer()}
+          >
             Retry
           </button>
         </div>
       )}
 
       {interview.status === 'paused' ? (
-        <button type="button" onClick={interview.resume}>
+        <button className="isdk-btn isdk-btn--primary" type="button" onClick={interview.resume}>
           Resume
         </button>
       ) : (
@@ -156,12 +168,18 @@ export function InterviewWidget({
                 : undefined
             }
             transcribe={transcribe}
+            synthesize={synthesize}
             onVoiceError={onVoiceError}
           />
         )
       )}
 
-      <button type="button" onClick={interview.pause} disabled={interview.status !== 'in_progress'}>
+      <button
+        className="isdk-btn isdk-btn--secondary isdk-widget__pause"
+        type="button"
+        onClick={interview.pause}
+        disabled={interview.status !== 'in_progress'}
+      >
         Pause
       </button>
 

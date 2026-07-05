@@ -106,6 +106,7 @@ export function MicButton({
 
   return (
     <button
+      className="isdk-btn isdk-btn--mic"
       type="button"
       onClick={handleClick}
       disabled={disabled || isTranscribing}

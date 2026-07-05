@@ -56,6 +56,35 @@ the pieces directly — `useInterview` plus `QuestionCard` /
 `TranscriptViewer` / `ScoreSummary` / `ReportCard` are all exported
 individually from the package root.
 
+## Styling
+
+Every component renders plain semantic HTML with stable `isdk-*`
+classNames and nothing else. Importing CSS is entirely optional:
+
+```ts
+import '@interview-sdk/react/styles.css';
+```
+
+- **Skip the import** for a fully headless build — style the `isdk-*`
+  classNames yourself, or ignore them and target the underlying tags/roles
+  (`section`, `button[type="submit"]`, `[role="alert"]`, etc.), same as in
+  earlier versions of this package.
+- **Import it** to get a complete, presentable interface with zero extra
+  work — the same design system as the project's own landing page: a warm
+  paper background, a serif display face for headings, monospace for
+  labels and scores, hairline-rule cards, and pass/flag/neutral score
+  chips (reusing the same 75/40 cutoffs `buildReport` already uses for
+  strengths/weaknesses, so a score reads the same color everywhere).
+- **Reskin it** by overriding the CSS custom properties it defines on
+  `:root` (`--isdk-accent`, `--isdk-paper`, `--isdk-radius`,
+  `--isdk-font-display`, etc. — see `styles.css` for the full list) in
+  your own stylesheet loaded after it, or override the `isdk-*` classes
+  directly for full control. It also respects `prefers-color-scheme: dark`
+  out of the box.
+
+Nothing here depends on the stylesheet being present — `InterviewWidget`
+and every sub-component work identically with or without it.
+
 ## Client Mode vs Server Mode
 
 - **`mode="client"`** — the browser calls your AI provider adapter directly
@@ -70,13 +99,27 @@ individually from the package root.
   `@interview-sdk/server` (Phase 5), which holds the provider keys and does
   the scoring. This is the recommended mode for anything real.
 
-## Voice input
+## Voice
 
-Pass a `transcribe` prop (`(audio: Blob) => Promise<string>`, typically a
-`VoiceProviderAdapter`'s `transcribe()`) to `InterviewWidget` or
-`QuestionCard` to enable the `MicButton`. Voice input is always additive: a
-text `<textarea>` is rendered regardless of whether `transcribe` is set, so
-candidates can always type instead of (or in addition to) speaking.
+Voice is two independent, both-optional props — set either, both, or
+neither:
+
+- **Input** — pass `transcribe` (`(audio: Blob) => Promise<string>`,
+  typically a `VoiceProviderAdapter`'s `transcribe()`) to enable the
+  `MicButton`. Always additive: a text `<textarea>` is rendered regardless
+  of whether `transcribe` is set, so candidates can always type instead of
+  (or in addition to) speaking.
+- **Output** — pass `synthesize` (`(text: string) => Promise<SynthesisResult>`,
+  typically a `VoiceProviderAdapter`'s `synthesize()`) to speak each
+  question and follow-up aloud via `QuestionAudio`. It autoplays once
+  audio is ready; if the browser blocks autoplay (no prior user gesture in
+  the tab), it falls back to a "Play question" button instead of failing
+  silently. Also additive — the prompt is always rendered as text
+  regardless of whether `synthesize` is set.
+
+Set both for a genuine voice-to-voice interview: the question is spoken,
+the candidate answers by speaking, and the transcript still shows every
+word for anyone reading instead of listening.
 
 ## Accessibility
 

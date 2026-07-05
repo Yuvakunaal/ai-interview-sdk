@@ -1,4 +1,6 @@
+import type { CSSProperties } from 'react';
 import type { TranscriptEntry } from '../hooks/build-report.js';
+import { scoreTier } from './score-tier.js';
 
 export interface TranscriptViewerProps {
   transcript: TranscriptEntry[];
@@ -18,19 +20,29 @@ function answerText(entry: TranscriptEntry): string {
  */
 export function TranscriptViewer({ transcript }: TranscriptViewerProps) {
   if (transcript.length === 0) {
-    return <p>No answers yet.</p>;
+    return <p className="isdk-transcript__empty">No answers yet.</p>;
   }
 
   return (
-    <ol aria-label="Interview transcript" role="log" aria-live="polite">
+    <ol className="isdk-transcript" aria-label="Interview transcript" role="log" aria-live="polite">
       {transcript.map((entry, index) => (
-        <li key={`${entry.question.id}-${index}`}>
-          <p>
-            <strong>{entry.isFollowUp ? 'Follow-up: ' : `Q${index + 1}: `}</strong>
+        <li
+          className="isdk-transcript__entry"
+          key={`${entry.question.id}-${index}`}
+          style={{ '--isdk-d': index } as CSSProperties}
+        >
+          <p className="isdk-transcript__prompt">
+            <strong className="isdk-kicker">
+              {entry.isFollowUp ? 'Follow-up: ' : `Q${index + 1}: `}
+            </strong>
             {entry.prompt}
           </p>
-          <p>{answerText(entry)}</p>
-          <p>Score: {entry.evaluation.totalScore}/100</p>
+          <p className="isdk-transcript__answer">{answerText(entry)}</p>
+          <p
+            className={`isdk-transcript__score isdk-chip isdk-chip--${scoreTier(entry.evaluation.totalScore)} isdk-tabular`}
+          >
+            Score: {entry.evaluation.totalScore}/100
+          </p>
         </li>
       ))}
     </ol>

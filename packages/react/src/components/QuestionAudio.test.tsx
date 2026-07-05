@@ -1,0 +1,117 @@
+import type { SynthesisResult } from '@interview-sdk/core';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QuestionAudio } from './QuestionAudio.js';
+
+function result(): SynthesisResult {
+  return { audio: new ArrayBuffer(4), mimeType: 'audio/mpeg' };
+}
+
+let createObjectURL: ReturnType<typeof vi.fn>;
+let revokeObjectURL: ReturnType<typeof vi.fn>;
+let playSpy: ReturnType<typeof vi.spyOn>;
+
+beforeEach(() => {
+  createObjectURL = vi.fn(() => 'blob:fake-url');
+  revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
+  playSpy = vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  playSpy.mockRestore();
+  vi.unstubAllGlobals();
+});
+
+describe('QuestionAudio', () => {
+  it('synthesizes on mount and autoplays once ready', async () => {
+    const synthesize = vi.fn(async () => result());
+    render(<QuestionAudio text="Explain hash maps." synthesize={synthesize} />);
+
+    expect(screen.getByRole('button')).toBeDisabled();
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    expect(synthesize).toHaveBeenCalledWith('Explain hash maps.');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Replay question' })).toBeInTheDocument(),
+    );
+  });
+
+  it('falls back to a manual "Play question" button when autoplay is blocked', async () => {
+    playSpy.mockRejectedValueOnce(new Error('NotAllowedError'));
+    const synthesize = vi.fn(async () => result());
+    render(<QuestionAudio text="Explain hash maps." synthesize={synthesize} />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Play question' })).toBeInTheDocument(),
+    );
+
+    const user = userEvent.setup();
+    playSpy.mockResolvedValueOnce(undefined);
+    await user.click(screen.getByRole('button', { name: 'Play question' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Replay question' })).toBeInTheDocument(),
+    );
+  });
+
+  it('does not attempt to play automatically when autoPlay is false', async () => {
+    const synthesize = vi.fn(async () => result());
+    render(<QuestionAudio text="Explain hash maps." synthesize={synthesize} autoPlay={false} />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Play question' })).toBeInTheDocument(),
+    );
+    expect(playSpy).not.toHaveBeenCalled();
+  });
+
+  it('reports an error and renders nothing when synthesis fails', async () => {
+    const onError = vi.fn();
+    const synthesize = vi.fn(async () => {
+      throw new Error('voice provider is overloaded');
+    });
+    const { container } = render(
+      <QuestionAudio text="Explain hash maps." synthesize={synthesize} onError={onError} />,
+    );
+
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+    expect(onError.mock.calls[0]![0].message).toBe('voice provider is overloaded');
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('reports an error when a manual play attempt fails', async () => {
+    playSpy.mockRejectedValueOnce(new Error('autoplay blocked'));
+    const onError = vi.fn();
+    const synthesize = vi.fn(async () => result());
+    render(<QuestionAudio text="Explain hash maps." synthesize={synthesize} onError={onError} />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Play question' })).toBeInTheDocument(),
+    );
+
+    const user = userEvent.setup();
+    playSpy.mockRejectedValueOnce(new Error('still blocked'));
+    await user.click(screen.getByRole('button', { name: 'Play question' }));
+
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+    expect(onError.mock.calls[0]![0].message).toBe('still blocked');
+  });
+
+  it('re-synthesizes and revokes the previous audio URL when the text changes', async () => {
+    const synthesize = vi.fn(async () => result());
+    const { rerender } = render(
+      <QuestionAudio text="Explain hash maps." synthesize={synthesize} />,
+    );
+
+    // Wait for the first synthesis cycle to fully settle (autoplay resolved)
+    // before swapping text, so its cleanup doesn't race the second cycle.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Replay question' })).toBeInTheDocument(),
+    );
+    rerender(<QuestionAudio text="Explain binary search." synthesize={synthesize} />);
+
+    await waitFor(() => expect(synthesize).toHaveBeenCalledTimes(2));
+    expect(synthesize).toHaveBeenLastCalledWith('Explain binary search.');
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:fake-url');
+  });
+});

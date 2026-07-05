@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import type { Rubric } from '@interview-sdk/core';
+import { scoreTier } from './score-tier.js';
 
 export interface ScoreSummaryProps {
   totalScore: number;
@@ -11,12 +12,17 @@ export function ScoreSummary({ totalScore, rubric, dimensionAverages }: ScoreSum
   const headingId = useId();
 
   return (
-    <section aria-labelledby={headingId}>
-      <h2 id={headingId}>Score Summary</h2>
-      <p>
-        Overall score: <strong>{totalScore}/100</strong>
+    <section className="isdk-score-summary" aria-labelledby={headingId}>
+      <h2 className="isdk-score-summary__title" id={headingId}>
+        Score Summary
+      </h2>
+      <p className="isdk-score-summary__total">
+        Overall score:{' '}
+        <strong className={`isdk-chip isdk-chip--${scoreTier(totalScore)} isdk-tabular`}>
+          {totalScore}/100
+        </strong>
       </p>
-      <table>
+      <table className="isdk-score-summary__table">
         <caption>Score breakdown by rubric dimension</caption>
         <thead>
           <tr>
@@ -25,12 +31,19 @@ export function ScoreSummary({ totalScore, rubric, dimensionAverages }: ScoreSum
           </tr>
         </thead>
         <tbody>
-          {rubric.dimensions.map((dimension) => (
-            <tr key={dimension.id}>
-              <th scope="row">{dimension.label}</th>
-              <td>{Math.round((dimensionAverages[dimension.id] ?? 0) * 100) / 100}/100</td>
-            </tr>
-          ))}
+          {rubric.dimensions.map((dimension) => {
+            const score = Math.round((dimensionAverages[dimension.id] ?? 0) * 100) / 100;
+            return (
+              <tr key={dimension.id}>
+                <th scope="row">{dimension.label}</th>
+                <td>
+                  <span className={`isdk-chip isdk-chip--${scoreTier(score)} isdk-tabular`}>
+                    {score}/100
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </section>

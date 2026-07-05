@@ -235,4 +235,38 @@ describe('InterviewWidget', () => {
 
     vi.unstubAllGlobals();
   });
+
+  it('speaks the current question aloud when synthesize is provided', async () => {
+    const user = userEvent.setup();
+    const playSpy = vi
+      .spyOn(window.HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined);
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:fake-url'),
+      revokeObjectURL: vi.fn(),
+    });
+    const adapter = fakeAdapter(['{}']);
+    const synthesize = vi.fn(async () => ({
+      audio: new ArrayBuffer(4),
+      mimeType: 'audio/mpeg',
+    }));
+
+    render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        synthesize={synthesize}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+
+    await waitFor(() => expect(synthesize).toHaveBeenCalledWith('Explain hash maps.'));
+
+    playSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
 });

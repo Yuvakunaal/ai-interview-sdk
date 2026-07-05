@@ -1,0 +1,469 @@
+/*
+ * Default theme for @interview-sdk/react — same design system as the
+ * project's landing page (warm paper background, serif display type,
+ * monospace for labels/data, hairline rules, a verified-report visual
+ * language for scores).
+ *
+ * Every component renders plain semantic HTML with stable `isdk-*`
+ * classNames and nothing else — importing this file is optional. Skip it
+ * entirely for a fully headless build, override the custom properties
+ * below to reskin, or override the classNames directly for full control.
+ *
+ *   import '@interview-sdk/react/styles.css';
+ */
+
+:root {
+  --isdk-paper: #eff3ea;
+  --isdk-surface: #fbfcf8;
+  --isdk-ink: #16211c;
+  --isdk-ink-soft: #57685d;
+  --isdk-accent: #b8862a;
+  --isdk-accent-ink: #241a06;
+  --isdk-pass: #2f7a52;
+  --isdk-pass-bg: #e4f1e9;
+  --isdk-flag: #b23b2e;
+  --isdk-flag-bg: #f6e3df;
+  --isdk-neutral-bg: #e9ede2;
+  --isdk-rule: #d9dfd1;
+  --isdk-shadow: 0 1px 2px rgba(22, 33, 28, 0.06), 0 8px 24px rgba(22, 33, 28, 0.05);
+
+  --isdk-radius: 4px;
+  --isdk-radius-sm: 3px;
+  --isdk-spacing: 1.5rem;
+
+  --isdk-font-display: ui-serif, Charter, 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --isdk-font-body:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --isdk-font-mono:
+    ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono', Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --isdk-paper: #101a14;
+    --isdk-surface: #16241c;
+    --isdk-ink: #eaf0e4;
+    --isdk-ink-soft: #93a491;
+    --isdk-accent: #e0ac3e;
+    --isdk-accent-ink: #1a1305;
+    --isdk-pass: #4fa374;
+    --isdk-pass-bg: #1b3527;
+    --isdk-flag: #dd6152;
+    --isdk-flag-bg: #3a211c;
+    --isdk-neutral-bg: #1e2a22;
+    --isdk-rule: #253327;
+    --isdk-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.isdk-widget,
+.isdk-question-card,
+.isdk-report-card,
+.isdk-score-summary,
+.isdk-transcript {
+  font-family: var(--isdk-font-body);
+  color: var(--isdk-ink);
+}
+
+.isdk-question-card,
+.isdk-report-card,
+.isdk-score-summary {
+  background: var(--isdk-surface);
+  border: 1px solid var(--isdk-rule);
+  border-radius: var(--isdk-radius);
+  padding: var(--isdk-spacing);
+  margin-bottom: var(--isdk-spacing);
+  box-shadow: var(--isdk-shadow);
+}
+
+.isdk-report-card .isdk-score-summary {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 1.25rem;
+}
+
+/* ---------- kicker: the small uppercase mono label used throughout ---------- */
+
+.isdk-kicker {
+  font-family: var(--isdk-font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--isdk-ink-soft);
+}
+
+.isdk-question-card__meta,
+.isdk-report-card__section-title,
+.isdk-score-summary__table caption {
+  font-family: var(--isdk-font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--isdk-ink-soft);
+  margin: 0 0 0.6rem;
+}
+
+/* ---------- headings ---------- */
+
+.isdk-question-card__prompt,
+.isdk-report-card__title,
+.isdk-score-summary__title {
+  font-family: var(--isdk-font-display);
+  font-weight: 600;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.75rem;
+}
+
+.isdk-report-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.isdk-report-card__head .isdk-report-card__title {
+  margin: 0;
+}
+
+/* ---------- stamp badge (ReportCard "Complete") ---------- */
+
+.isdk-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--isdk-font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--isdk-pass);
+  border: 1px solid var(--isdk-pass);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem 0.25rem 0.5rem;
+  white-space: nowrap;
+}
+
+.isdk-stamp svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+/* ---------- score chips ---------- */
+
+.isdk-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.isdk-chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--isdk-font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  background: var(--isdk-neutral-bg);
+  color: var(--isdk-ink);
+  border-radius: var(--isdk-radius-sm);
+  padding: 0.15rem 0.5rem;
+}
+
+.isdk-chip--pass {
+  background: var(--isdk-pass-bg);
+  color: var(--isdk-pass);
+}
+
+.isdk-chip--flag {
+  background: var(--isdk-flag-bg);
+  color: var(--isdk-flag);
+}
+
+.isdk-chip--neutral {
+  background: var(--isdk-neutral-bg);
+  color: var(--isdk-ink-soft);
+}
+
+/* ---------- hint / error notes ---------- */
+
+.isdk-question-card__hint {
+  background: color-mix(in srgb, var(--isdk-accent) 8%, var(--isdk-surface));
+  border: 1px solid var(--isdk-rule);
+  border-left: 3px solid var(--isdk-accent);
+  color: var(--isdk-ink-soft);
+  border-radius: var(--isdk-radius-sm);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}
+
+.isdk-widget__error {
+  background: var(--isdk-flag-bg);
+  border: 1px solid var(--isdk-flag);
+  color: var(--isdk-flag);
+  border-radius: var(--isdk-radius-sm);
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.isdk-widget__error p {
+  margin: 0 0 0.6rem;
+}
+
+/* ---------- form ---------- */
+
+.isdk-question-card__label {
+  display: block;
+  font-family: var(--isdk-font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--isdk-ink-soft);
+  margin-bottom: 0.5rem;
+}
+
+.isdk-question-card__textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-family: var(--isdk-font-body);
+  color: inherit;
+  background: var(--isdk-paper);
+  border: 1px solid var(--isdk-rule);
+  border-radius: var(--isdk-radius-sm);
+  padding: 0.75rem;
+  resize: vertical;
+  margin-bottom: 0.85rem;
+}
+
+.isdk-question-card__textarea:focus-visible {
+  outline: 2px solid var(--isdk-accent);
+  outline-offset: 1px;
+}
+
+.isdk-question-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+/* ---------- buttons ---------- */
+
+.isdk-btn {
+  font: inherit;
+  font-family: var(--isdk-font-body);
+  font-weight: 600;
+  font-size: 0.88rem;
+  border: 1px solid var(--isdk-rule);
+  background: var(--isdk-surface);
+  color: var(--isdk-ink);
+  border-radius: var(--isdk-radius-sm);
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.isdk-btn:hover:not(:disabled) {
+  border-color: var(--isdk-accent);
+}
+
+.isdk-btn:focus-visible {
+  outline: 2px solid var(--isdk-accent);
+  outline-offset: 2px;
+}
+
+.isdk-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.isdk-btn--primary {
+  background: var(--isdk-accent);
+  border-color: var(--isdk-accent);
+  color: var(--isdk-accent-ink);
+  box-shadow: var(--isdk-shadow);
+}
+
+.isdk-btn--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--isdk-accent);
+}
+
+.isdk-btn--secondary:hover:not(:disabled) {
+  color: var(--isdk-accent);
+}
+
+.isdk-btn--mic {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.isdk-btn--mic::before {
+  content: '';
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--isdk-ink-soft);
+  flex-shrink: 0;
+}
+
+.isdk-btn--mic[aria-pressed='true'] {
+  border-color: var(--isdk-flag);
+  color: var(--isdk-flag);
+}
+
+.isdk-btn--mic[aria-pressed='true']::before {
+  background: var(--isdk-flag);
+  animation: isdk-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes isdk-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--isdk-flag) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+.isdk-question-audio {
+  margin: 0 0 1rem;
+}
+
+.isdk-btn--audio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+}
+
+.isdk-btn--audio::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-top: 0.32rem solid transparent;
+  border-bottom: 0.32rem solid transparent;
+  border-left: 0.42rem solid currentColor;
+}
+
+/* ---------- widget shell ---------- */
+
+.isdk-widget {
+  display: flex;
+  flex-direction: column;
+}
+
+.isdk-widget--start {
+  display: block;
+}
+
+.isdk-widget__pause {
+  align-self: flex-start;
+  margin: 0.75rem 0;
+}
+
+/* ---------- transcript ---------- */
+
+.isdk-transcript {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.isdk-transcript__entry {
+  border-top: 1px solid var(--isdk-rule);
+  padding: 0.9rem 0;
+  opacity: 0;
+  transform: translateY(6px);
+  animation: isdk-rise-in 0.4s ease-out forwards;
+  animation-delay: calc(var(--isdk-d, 0) * 60ms);
+}
+
+.isdk-transcript__entry:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.isdk-transcript__prompt {
+  margin: 0 0 0.35rem;
+}
+
+.isdk-transcript__answer {
+  color: var(--isdk-ink-soft);
+  margin: 0 0 0.5rem;
+}
+
+.isdk-transcript__score {
+  margin: 0;
+}
+
+@keyframes isdk-rise-in {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- score summary ---------- */
+
+.isdk-score-summary__total {
+  margin: 0 0 1rem;
+}
+
+.isdk-score-summary__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.isdk-score-summary__table th,
+.isdk-score-summary__table td {
+  text-align: left;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--isdk-rule);
+  font-size: 0.92rem;
+}
+
+.isdk-score-summary__table caption {
+  caption-side: top;
+  text-align: left;
+}
+
+/* ---------- report card ---------- */
+
+.isdk-report-card__section {
+  margin-bottom: 1.25rem;
+}
+
+.isdk-report-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--isdk-rule);
+}
+
+/* ---------- motion preference ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .isdk-transcript__entry {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .isdk-btn--mic[aria-pressed='true']::before {
+    animation: none;
+  }
+  .isdk-btn--primary:hover:not(:disabled) {
+    transform: none;
+  }
+}

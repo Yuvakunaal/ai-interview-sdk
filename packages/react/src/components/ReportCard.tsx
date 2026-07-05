@@ -50,8 +50,24 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
   }, [report, onExportError, exportJson]);
 
   return (
-    <article aria-labelledby={headingId}>
-      <h2 id={headingId}>Interview Report</h2>
+    <article className="isdk-report-card" aria-labelledby={headingId}>
+      <div className="isdk-report-card__head">
+        <h2 className="isdk-report-card__title" id={headingId}>
+          Interview Report
+        </h2>
+        <span className="isdk-stamp">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M3 8.5L6.2 11.5L13 4.5"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Complete
+        </span>
+      </div>
 
       <ScoreSummary
         totalScore={report.totalScore}
@@ -59,8 +75,8 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
         dimensionAverages={report.dimensionAverages}
       />
 
-      <section>
-        <h3>Strengths</h3>
+      <section className="isdk-report-card__section">
+        <h3 className="isdk-report-card__section-title">Strengths</h3>
         {report.strengths.length > 0 ? (
           <ul>
             {report.strengths.map((strength) => (
@@ -72,8 +88,8 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
         )}
       </section>
 
-      <section>
-        <h3>Areas for improvement</h3>
+      <section className="isdk-report-card__section">
+        <h3 className="isdk-report-card__section-title">Areas for improvement</h3>
         {report.weaknesses.length > 0 ? (
           <ul>
             {report.weaknesses.map((weakness) => (
@@ -86,8 +102,8 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
       </section>
 
       {report.missedConcepts.length > 0 && (
-        <section>
-          <h3>Recommended review topics</h3>
+        <section className="isdk-report-card__section">
+          <h3 className="isdk-report-card__section-title">Recommended review topics</h3>
           <ul>
             {report.missedConcepts.map((concept) => (
               <li key={concept}>{concept}</li>
@@ -98,14 +114,18 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
 
       <TranscriptViewer transcript={report.transcript} />
 
-      <div>
-        <button type="button" onClick={exportJson}>
+      <div className="isdk-report-card__actions">
+        <button className="isdk-btn isdk-btn--secondary" type="button" onClick={exportJson}>
           Export JSON
         </button>
-        <button type="button" onClick={exportCsv}>
+        <button className="isdk-btn isdk-btn--secondary" type="button" onClick={exportCsv}>
           Export CSV
         </button>
-        <button type="button" onClick={() => void exportPdf()}>
+        <button
+          className="isdk-btn isdk-btn--secondary"
+          type="button"
+          onClick={() => void exportPdf()}
+        >
           Export PDF
         </button>
       </div>

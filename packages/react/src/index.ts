@@ -6,6 +6,7 @@ export * from './processor/client-mode-processor.js';
 export * from './processor/server-mode-processor.js';
 
 export * from './components/MicButton.js';
+export * from './components/QuestionAudio.js';
 export * from './components/QuestionCard.js';
 export * from './components/TranscriptViewer.js';
 export * from './components/ScoreSummary.js';
