@@ -20,7 +20,25 @@ npx interview-sdk init --framework nextjs
 Writes a starter route wired to `@interview-sdk/server`
 (`app/api/interview/answer/route.ts` for Next.js, `interview-server.mjs`
 for a standalone Node server) with a clearly-marked placeholder adapter to
-fill in. Refuses to overwrite an existing file unless you pass `--force`.
+fill in, plus a `.env.example` listing the env vars the route reads
+(`INTERVIEW_SIGNING_SECRET`, and a commented-out slot for whichever AI
+provider key you end up using). Refuses to overwrite either existing file
+unless you pass `--force`. Pass `--dir <path>` to scaffold into a directory
+other than the current working directory.
+
+## `dashboard` — customize your interview and copy the code
+
+```bash
+npx interview-sdk dashboard [--port 4949]
+```
+
+Starts a local static server (no build step of your own, no network calls
+out) and opens it in your browser. Customize your question set, runtime
+mode (voice/hybrid/typed), difficulty, timebox, and follow-ups against a
+live `<InterviewWidget>` preview (a local mock adapter — no API keys, no
+real AI call), then switch to the **Code** tab and copy the exact,
+Server-Mode-recommended integration code into your own app. Picks the next
+free port automatically if the default is in use. Press Ctrl+C to stop.
 
 ## `simulate` — the Interview Simulator
 

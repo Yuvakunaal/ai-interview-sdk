@@ -14,12 +14,16 @@ npm install @interview-sdk/core @interview-sdk/adapter-openai
 ## Usage
 
 ```ts
-import { AdapterRegistry } from '@interview-sdk/core';
 import { OpenAIAdapter } from '@interview-sdk/adapter-openai';
 
-const registry = new AdapterRegistry();
-registry.registerAIProvider(new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY }));
+const adapter = new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY });
+// <InterviewWidget adapter={adapter} mode="client" ... />
+// or: new ServerAnswerProcessor({ questions, rubric, adapter })
 ```
+
+(`AdapterRegistry` from `@interview-sdk/core` is a separate, optional utility
+for looking an adapter up by string id at runtime — most apps just pass the
+adapter directly like above.)
 
 `OpenAIAdapter` accepts an optional `model` (defaults to `gpt-5.4-mini` — a
 cost-effective choice for structured scoring tasks; pass `gpt-5.5` for the

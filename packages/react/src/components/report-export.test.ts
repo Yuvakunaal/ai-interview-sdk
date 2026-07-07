@@ -48,6 +48,29 @@ describe('transcriptToCsv', () => {
   it('returns just the header for an empty transcript', () => {
     expect(transcriptToCsv([])).toBe('question,prompt,isFollowUp,answer,score');
   });
+
+  it('neutralizes a leading formula-trigger character to prevent CSV/formula injection', () => {
+    for (const malicious of [
+      '=cmd|\'/c calc\'!A1',
+      '+1+1',
+      '-2+3',
+      '@SUM(1,2)',
+    ]) {
+      const csv = transcriptToCsv([entry({ answer: { questionId: 'q1', text: malicious, submittedAt: 1 } })]);
+      const answerField = csv.split('\n')[1];
+      expect(answerField).toContain(`'${malicious}`);
+      expect(answerField?.startsWith('q1,Explain hash maps.,false,=')).toBe(false);
+      expect(answerField?.startsWith('q1,Explain hash maps.,false,+')).toBe(false);
+      expect(answerField?.startsWith('q1,Explain hash maps.,false,-')).toBe(false);
+      expect(answerField?.startsWith('q1,Explain hash maps.,false,@')).toBe(false);
+    }
+  });
+
+  it('leaves ordinary answers starting with other characters untouched', () => {
+    const csv = transcriptToCsv([entry({ answer: { questionId: 'q1', text: 'It uses buckets.', submittedAt: 1 } })]);
+    expect(csv).toContain('It uses buckets.');
+    expect(csv).not.toContain("'It uses buckets.");
+  });
 });
 
 describe('downloadBlob', () => {

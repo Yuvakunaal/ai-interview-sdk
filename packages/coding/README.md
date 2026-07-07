@@ -56,8 +56,10 @@ untrusted code.
 
 - **`DockerCodeExecutionProvider`** (default) — shells out to `docker run`
   for genuine OS-level isolation: `--network=none`, a read-only root
-  filesystem, memory/CPU/process-count limits, and a non-root user. Requires
-  Docker on whatever machine runs it (your backend or CI — never a
+  filesystem, memory/CPU/process-count limits, a non-root user, every Linux
+  capability dropped (`--cap-drop=ALL`), `--security-opt=no-new-privileges`,
+  and default runtime images pinned by digest rather than a mutable tag.
+  Requires Docker on whatever machine runs it (your backend or CI — never a
   maintainer-hosted service, per the Zero-Infra Guarantee).
 - **`PistonCodeExecutionProvider`** — a hosted-sandbox alternative for
   environments without Docker (e.g. serverless). Piston's public instance
@@ -99,3 +101,8 @@ const provider = new PistonCodeExecutionProvider({
   the result, but there's no multi-file support yet.
 - Only JavaScript and Python ship as default Docker runtimes; add more via
   the `languages` config option.
+- The default runtimes' pinned image digests (see `DEFAULT_LANGUAGE_RUNTIMES`
+  in `docker-provider.ts`) don't pick up upstream security patches on their
+  own — they need periodic manual refresh (`docker buildx imagetools
+  inspect <image>:<tag>`), or override `languages` with your own image
+  reference if you'd rather track a tag directly.

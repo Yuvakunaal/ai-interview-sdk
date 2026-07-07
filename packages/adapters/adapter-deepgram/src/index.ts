@@ -11,8 +11,14 @@ import {
 
 export interface DeepgramAdapterConfig {
   apiKey?: string;
-  /** Transcription model. Defaults to `nova-3`. */
-  model?: string;
+  /**
+   * Speech-to-text (transcription) model. Defaults to `nova-3`. Named to
+   * mirror `@interview-sdk/adapter-elevenlabs`'s `transcribeModel` — on that
+   * adapter, `model` means TTS instead, so this package deliberately never
+   * has a bare `model` option to avoid the same name meaning opposite
+   * things depending on which voice adapter you're configuring.
+   */
+  transcribeModel?: string;
   /** Speech-synthesis (TTS) model. Defaults to `aura-2-thalia-en`. */
   speakModel?: string;
   /** Inject a pre-configured client (e.g. for testing). */
@@ -25,19 +31,19 @@ const DEFAULT_SPEAK_MODEL = 'aura-2-thalia-en';
 export class DeepgramAdapter implements VoiceProviderAdapter {
   readonly id = 'deepgram';
   private readonly client: DeepgramClient;
-  private readonly model: string;
+  private readonly transcribeModel: string;
   private readonly speakModel: string;
 
   constructor(config: DeepgramAdapterConfig = {}) {
     this.client = config.client ?? new DeepgramClient({ apiKey: config.apiKey });
-    this.model = config.model ?? DEFAULT_TRANSCRIBE_MODEL;
+    this.transcribeModel = config.transcribeModel ?? DEFAULT_TRANSCRIBE_MODEL;
     this.speakModel = config.speakModel ?? DEFAULT_SPEAK_MODEL;
   }
 
   async transcribe(audio: ArrayBuffer | Uint8Array): Promise<TranscriptResult> {
     try {
       const response = await this.client.listen.v1.media.transcribeFile(audio, {
-        model: this.model,
+        model: this.transcribeModel,
         smart_format: true,
       });
 

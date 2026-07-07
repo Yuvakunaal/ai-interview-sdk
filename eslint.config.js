@@ -27,7 +27,11 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/react/**/*.{ts,tsx}'],
+    files: [
+      'packages/react/**/*.{ts,tsx}',
+      'packages/dashboard/**/*.{ts,tsx}',
+      'packages/landing/**/*.{ts,tsx}',
+    ],
     ...react.configs.flat.recommended,
     // Not 'detect': eslint-plugin-react@7.37.5's auto-detection still calls
     // ESLint's removed context.getFilename() method under ESLint 10 and
@@ -35,16 +39,28 @@ export default tseslint.config(
     settings: { react: { version: '19.2.7' } },
   },
   {
-    files: ['packages/react/**/*.{ts,tsx}'],
+    files: [
+      'packages/react/**/*.{ts,tsx}',
+      'packages/dashboard/**/*.{ts,tsx}',
+      'packages/landing/**/*.{ts,tsx}',
+    ],
     plugins: { 'react-hooks': reactHooks },
     rules: reactHooks.configs['recommended-latest'].rules,
   },
   {
-    files: ['packages/react/**/*.{ts,tsx}'],
+    files: [
+      'packages/react/**/*.{ts,tsx}',
+      'packages/dashboard/**/*.{ts,tsx}',
+      'packages/landing/**/*.{ts,tsx}',
+    ],
     ...jsxA11y.flatConfigs.recommended,
   },
   {
-    files: ['packages/react/**/*.{ts,tsx}'],
+    files: [
+      'packages/react/**/*.{ts,tsx}',
+      'packages/dashboard/**/*.{ts,tsx}',
+      'packages/landing/**/*.{ts,tsx}',
+    ],
     rules: {
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',

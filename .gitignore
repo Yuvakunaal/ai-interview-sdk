@@ -12,3 +12,17 @@ npm-debug.log*
 pnpm-debug.log*
 .DS_Store
 *.tsbuildinfo
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local design export dump, not part of the shipped codebase
+figma design/
+
+# Misc build/tool caches
+.eslintcache
+.cache/
+.vite/

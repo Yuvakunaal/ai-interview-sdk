@@ -13,14 +13,26 @@ npm install @interview-sdk/core @interview-sdk/adapter-deepgram
 ## Usage
 
 ```ts
-import { AdapterRegistry } from '@interview-sdk/core';
 import { DeepgramAdapter } from '@interview-sdk/adapter-deepgram';
 
-const registry = new AdapterRegistry();
-registry.registerVoiceProvider(new DeepgramAdapter({ apiKey: process.env.DEEPGRAM_API_KEY }));
+const voiceAdapter = new DeepgramAdapter({ apiKey: process.env.DEEPGRAM_API_KEY });
 ```
 
-`DeepgramAdapter` accepts an optional `model` (transcription, defaults to
+`<InterviewWidget>`'s `transcribe`/`synthesize` props are plain functions
+(`(audio: Blob) => Promise<string>` / `(text: string) => Promise<SynthesisResult>`),
+not a `VoiceProviderAdapter` instance — `synthesize` matches directly, but
+`transcribe` needs a one-line adapter since `VoiceProviderAdapter.transcribe`
+takes an `ArrayBuffer`/`Uint8Array` and returns a `TranscriptResult`:
+
+```tsx
+<InterviewWidget
+  transcribe={async (audio) => (await voiceAdapter.transcribe(await audio.arrayBuffer())).text}
+  synthesize={voiceAdapter.synthesize.bind(voiceAdapter)}
+  // ...
+/>
+```
+
+`DeepgramAdapter` accepts an optional `transcribeModel` (defaults to
 `nova-3`), `speakModel` (TTS, defaults to `aura-2-thalia-en`), and an
 optional pre-configured `client` for testing.
 

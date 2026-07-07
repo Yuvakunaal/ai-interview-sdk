@@ -14,12 +14,16 @@ npm install @interview-sdk/core @interview-sdk/adapter-gemini
 ## Usage
 
 ```ts
-import { AdapterRegistry } from '@interview-sdk/core';
 import { GeminiAdapter } from '@interview-sdk/adapter-gemini';
 
-const registry = new AdapterRegistry();
-registry.registerAIProvider(new GeminiAdapter({ apiKey: process.env.GEMINI_API_KEY }));
+const adapter = new GeminiAdapter({ apiKey: process.env.GEMINI_API_KEY });
+// <InterviewWidget adapter={adapter} mode="client" ... />
+// or: new ServerAnswerProcessor({ questions, rubric, adapter })
 ```
+
+(`AdapterRegistry` from `@interview-sdk/core` is a separate, optional utility
+for looking an adapter up by string id at runtime — most apps just pass the
+adapter directly like above.)
 
 `GeminiAdapter` accepts an optional `model` (defaults to `gemini-3.5-flash`;
 pass `gemini-3.1-pro` for heavier reasoning) and an optional pre-configured

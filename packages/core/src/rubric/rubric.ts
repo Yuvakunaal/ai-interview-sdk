@@ -1,6 +1,13 @@
 import { RubricValidationError } from '../errors.js';
 import type { Rubric, RubricDimensionInput } from '../types.js';
 
+// Config can come from an untyped source (JSON, a CMS) where "id" might
+// actually be a number/object at runtime — checking the type means that
+// fails validation cleanly instead of crashing on `.trim()` below.
+function isBlank(value: unknown): boolean {
+  return typeof value !== 'string' || value.trim() === '';
+}
+
 /** Shared by defineRubric() and the developer-configuration validator, so the two never drift apart. */
 export function collectRubricIssues(dimensions: RubricDimensionInput[] | undefined): string[] {
   const issues: string[] = [];
@@ -11,7 +18,7 @@ export function collectRubricIssues(dimensions: RubricDimensionInput[] | undefin
 
   const seenIds = new Set<string>();
   for (const dimension of dimensions ?? []) {
-    if (!dimension.id || dimension.id.trim() === '') {
+    if (isBlank(dimension.id)) {
       issues.push('A rubric dimension is missing an id.');
     } else if (seenIds.has(dimension.id)) {
       issues.push(`Duplicate rubric dimension id: "${dimension.id}".`);

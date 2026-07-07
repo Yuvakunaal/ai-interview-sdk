@@ -13,14 +13,27 @@ export interface LanguageRuntimeConfig {
   runCommand: (fileName: string) => string[];
 }
 
+// Pinned by digest (not just the mutable `:20-alpine`/`:3.12-alpine` tags) so
+// a registry-side tag re-push can't silently swap in a different image
+// underneath this sandbox — the whole point of `--read-only`/`--cap-drop`
+// etc. below is defense against untrusted *code*, which a swapped base image
+// would bypass entirely. Multi-arch index digests (`docker buildx imagetools
+// inspect <image>` shows this as the top-level `Digest:`), so this resolves
+// correctly on both amd64 and arm64 hosts. Trade-off: pinning means these
+// never pick up upstream security patches on their own — re-run the same
+// `imagetools inspect` command periodically (this pair last refreshed
+// 2026-07-07) and bump the digest, or override `languages` in this
+// provider's config with your own if you need to track a tag more closely.
 export const DEFAULT_LANGUAGE_RUNTIMES: Record<string, LanguageRuntimeConfig> = {
   javascript: {
-    image: 'node:20-alpine',
+    image:
+      'node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293',
     fileName: 'main.js',
     runCommand: (file) => ['node', file],
   },
   python: {
-    image: 'python:3.12-alpine',
+    image:
+      'python:3.12-alpine@sha256:6d43704baacd1bfbe7c295d7f13079d5d8104ed33568873133f8fc69980419df',
     fileName: 'main.py',
     runCommand: (file) => ['python3', file],
   },
@@ -50,6 +63,10 @@ export interface DockerCodeExecutionProviderConfig {
 const DEFAULT_TIMEOUT_MS = 5000;
 const DEFAULT_MEMORY_LIMIT_MB = 256;
 const DEFAULT_MAX_OUTPUT_BYTES = 64 * 1024;
+// How long to wait after the timeout-triggered `docker kill` before giving
+// up on a graceful `close` and force-settling — bounds the worst case where
+// the kill silently didn't take effect.
+const KILL_GRACE_MS = 3000;
 
 /**
  * Default sandbox: shells out to `docker run` for genuine OS-level
@@ -59,9 +76,13 @@ const DEFAULT_MAX_OUTPUT_BYTES = 64 * 1024;
  *
  * Every container runs with `--network=none`, a read-only root filesystem
  * (a small writable `/tmp` tmpfs for language runtimes that need it),
- * memory/CPU/process-count limits, and as a non-root user. The candidate's
- * source is written to a host temp file and bind-mounted read-only, rather
- * than piped in, to avoid shell-escaping the code itself.
+ * memory/CPU/process-count limits, as a non-root user, every Linux
+ * capability dropped (`--cap-drop=ALL`), and `--security-opt=no-new-
+ * privileges` (blocks setuid/setgid escalation even if a binary in the
+ * image had that bit set). The candidate's source is written to a host
+ * temp file and bind-mounted read-only, rather than piped in, to avoid
+ * shell-escaping the code itself. Base images are pinned by digest (see
+ * `DEFAULT_LANGUAGE_RUNTIMES`), not a mutable tag.
  */
 export class DockerCodeExecutionProvider implements CodeExecutionProvider {
   readonly id = 'docker';
@@ -139,6 +160,10 @@ export class DockerCodeExecutionProvider implements CodeExecutionProvider {
       '64',
       '--user',
       'nobody',
+      '--cap-drop',
+      'ALL',
+      '--security-opt',
+      'no-new-privileges',
       '-v',
       `${hostFilePath}:/sandbox/${runtime.fileName}:ro`,
       '-w',
@@ -156,12 +181,37 @@ export class DockerCodeExecutionProvider implements CodeExecutionProvider {
       let stderr = '';
       let timedOut = false;
       let settled = false;
+      let cancelFallback: (() => void) | undefined;
 
       const cancelTimeout = this.scheduleTimeout(() => {
         timedOut = true;
         // Killing the `docker run` CLI process alone would not stop the
         // container (the CLI just proxies it) — kill the container itself.
-        this.spawnImpl('docker', ['kill', containerName]);
+        // An unlistened 'error' event on this child (e.g. a docker-daemon
+        // hiccup during the kill) would otherwise crash the host process —
+        // this is best-effort cleanup, not something worth failing on.
+        this.spawnImpl('docker', ['kill', containerName]).on('error', () => {});
+
+        // If the kill above doesn't actually stop the container (daemon
+        // hiccup, container already wedged, etc.), `child`'s 'close' may
+        // never fire — leaving this promise, and the caller awaiting it,
+        // hung forever, and the temp dir in execute()'s `finally` never
+        // cleaned up. This grace-period fallback guarantees the promise
+        // always settles, and makes one harder cleanup attempt first.
+        cancelFallback = this.scheduleTimeout(() => {
+          if (settled) return;
+          settled = true;
+          this.spawnImpl('docker', ['rm', '-f', containerName]).on('error', () => {});
+          child.kill?.('SIGKILL');
+          resolve({
+            stdout: stdout.trim(),
+            stderr: stderr.trim(),
+            exitCode: null,
+            timedOut: true,
+            durationMs: Date.now() - start,
+            memoryExceeded: false,
+          });
+        }, KILL_GRACE_MS);
       }, timeoutMs);
 
       child.stdout?.on('data', (chunk: Buffer) => {
@@ -175,6 +225,7 @@ export class DockerCodeExecutionProvider implements CodeExecutionProvider {
         if (settled) return;
         settled = true;
         cancelTimeout();
+        cancelFallback?.();
         reject(error);
       });
 
@@ -182,6 +233,7 @@ export class DockerCodeExecutionProvider implements CodeExecutionProvider {
         if (settled) return;
         settled = true;
         cancelTimeout();
+        cancelFallback?.();
         const durationMs = Date.now() - start;
         // Docker's OOM killer exits the container with 137 (128+SIGKILL).
         // Our own timeout kill also produces 137, so only attribute it to

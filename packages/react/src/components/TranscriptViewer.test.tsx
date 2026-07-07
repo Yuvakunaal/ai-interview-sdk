@@ -46,11 +46,14 @@ describe('TranscriptViewer', () => {
     render(
       <TranscriptViewer transcript={[entry({ isFollowUp: true, prompt: 'Can you say more?' })]} />,
     );
-    expect(screen.getByText('Follow-up:')).toBeInTheDocument();
+    expect(screen.getByText('Follow-up')).toBeInTheDocument();
     expect(screen.getByText('Can you say more?')).toBeInTheDocument();
   });
 
-  it('numbers non-follow-up entries in order', () => {
+  it('numbers non-follow-up entries by question, not by raw transcript position', () => {
+    // A follow-up shares its parent's slot instead of claiming the next
+    // number — "Second question" here is the 2nd actual question asked,
+    // even though it's the 3rd transcript entry overall.
     render(
       <TranscriptViewer
         transcript={[
@@ -60,8 +63,8 @@ describe('TranscriptViewer', () => {
         ]}
       />,
     );
-    expect(screen.getByText('Q1:')).toBeInTheDocument();
-    expect(screen.getByText('Q3:')).toBeInTheDocument();
+    expect(screen.getByText('Q1')).toBeInTheDocument();
+    expect(screen.getByText('Q2')).toBeInTheDocument();
   });
 
   it('shows "(Skipped)" for a skipped answer', () => {

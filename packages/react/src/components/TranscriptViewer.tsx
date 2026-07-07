@@ -23,26 +23,41 @@ export function TranscriptViewer({ transcript }: TranscriptViewerProps) {
     return <p className="isdk-transcript__empty">No answers yet.</p>;
   }
 
+  // A follow-up shares its parent question's slot rather than claiming the
+  // next number itself — counting the raw array index instead would number
+  // every question AFTER the first follow-up one too high (a transcript's
+  // length grows with follow-ups, but there's still the same number of
+  // actual questions).
+  const questionNumbers = transcript.reduce<number[]>((numbers, entry) => {
+    const previous = numbers.at(-1) ?? 0;
+    numbers.push(entry.isFollowUp ? previous : previous + 1);
+    return numbers;
+  }, []);
+
   return (
     <ol className="isdk-transcript" aria-label="Interview transcript" role="log" aria-live="polite">
       {transcript.map((entry, index) => (
         <li
-          className="isdk-transcript__entry"
+          className={
+            entry.isFollowUp
+              ? 'isdk-transcript__entry isdk-transcript__entry--followup'
+              : 'isdk-transcript__entry'
+          }
           key={`${entry.question.id}-${index}`}
           style={{ '--isdk-d': index } as CSSProperties}
         >
-          <p className="isdk-transcript__prompt">
+          <div className="isdk-transcript__entry-head">
             <strong className="isdk-kicker">
-              {entry.isFollowUp ? 'Follow-up: ' : `Q${index + 1}: `}
+              {entry.isFollowUp ? 'Follow-up' : `Q${questionNumbers[index]}`}
             </strong>
-            {entry.prompt}
-          </p>
+            <span
+              className={`isdk-transcript__score isdk-chip isdk-chip--${scoreTier(entry.evaluation.totalScore)} isdk-tabular`}
+            >
+              Score: {entry.evaluation.totalScore}/100
+            </span>
+          </div>
+          <p className="isdk-transcript__prompt">{entry.prompt}</p>
           <p className="isdk-transcript__answer">{answerText(entry)}</p>
-          <p
-            className={`isdk-transcript__score isdk-chip isdk-chip--${scoreTier(entry.evaluation.totalScore)} isdk-tabular`}
-          >
-            Score: {entry.evaluation.totalScore}/100
-          </p>
         </li>
       ))}
     </ol>

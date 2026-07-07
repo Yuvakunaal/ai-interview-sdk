@@ -49,6 +49,28 @@ describe('validateInterviewConfig', () => {
     ).toThrow(/missing a prompt/);
   });
 
+  it('fails loud (not crashes) on a non-string question id from an untyped config source', () => {
+    expect(() =>
+      validateInterviewConfig(
+        baseConfig({
+          // Simulates a JSON/CMS-sourced config where "id" isn't guaranteed
+          // to be a string at runtime, despite the TypeScript type.
+          questions: [{ id: 123 as unknown as string, prompt: 'Explain hash maps.' }],
+        }),
+      ),
+    ).toThrow(/missing an id/);
+  });
+
+  it('fails loud (not crashes) on a non-string question prompt from an untyped config source', () => {
+    expect(() =>
+      validateInterviewConfig(
+        baseConfig({
+          questions: [{ id: 'q1', prompt: { en: 'Explain hash maps.' } as unknown as string }],
+        }),
+      ),
+    ).toThrow(/missing a prompt/);
+  });
+
   it('fails loud on a missing rubric', () => {
     expect(() => validateInterviewConfig(baseConfig({ rubric: [] }))).toThrow(/rubric is required/);
   });

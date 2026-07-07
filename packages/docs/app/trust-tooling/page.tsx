@@ -105,6 +105,11 @@ export default {
       <h2>Also in the CLI</h2>
       <ul>
         <li>
+          <code>interview-sdk dashboard</code> — opens a local tool in your browser to customize
+          your question set, runtime mode, and theme against a live preview, then copy the exact
+          integration code for your app.
+        </li>
+        <li>
           <code>interview-sdk init --framework nextjs</code> — scaffolds the Server Mode route from{' '}
           <a href="/production">Production Setup</a>.
         </li>

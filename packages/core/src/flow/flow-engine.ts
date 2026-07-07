@@ -125,6 +125,28 @@ export class InterviewFlowEngine {
   }
 
   /**
+   * Voluntarily ends the session before every question has been answered —
+   * a candidate or developer choosing to stop, rather than the flow
+   * naturally advancing past the last question. Idempotent once the
+   * session is already completed or expired; a no-op before it's started.
+   */
+  end(): SessionState {
+    this.applyExpiryIfNeeded();
+    if (this.state.status === 'completed' || this.state.status === 'expired') {
+      return this.getState();
+    }
+    if (this.state.status === 'not_started') return this.getState();
+    this.state = {
+      ...this.state,
+      status: 'completed',
+      completedAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    this.events.emit('sessionEnd', { sessionId: this.state.sessionId });
+    return this.getState();
+  }
+
+  /**
    * Idempotent: submitting again for the same question at the same
    * follow-up depth (double-click, network retry, duplicate tab) does not
    * record a second answer.
@@ -172,9 +194,10 @@ export class InterviewFlowEngine {
   recordFollowUp(prompt: string): SessionState {
     const question = this.currentQuestion();
     if (!question) throw new InterviewSdkError('No current question to attach a follow-up to.');
-    if (this.state.followUpDepthForCurrentQuestion >= this.maxFollowUpDepth) {
+    const maxDepth = question.maxFollowUps ?? this.maxFollowUpDepth;
+    if (this.state.followUpDepthForCurrentQuestion >= maxDepth) {
       throw new InterviewSdkError(
-        `Cannot record another follow-up: max depth (${this.maxFollowUpDepth}) already reached for "${question.id}".`,
+        `Cannot record another follow-up: max depth (${maxDepth}) already reached for "${question.id}".`,
       );
     }
 
@@ -223,7 +246,7 @@ export class InterviewFlowEngine {
         completedAt: Date.now(),
         updatedAt: Date.now(),
       };
-      this.events.emit('sessionEnd', { sessionId: this.state.sessionId, totalScore: 0 });
+      this.events.emit('sessionEnd', { sessionId: this.state.sessionId });
     } else {
       this.state = {
         ...this.state,

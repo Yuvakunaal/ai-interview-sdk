@@ -7,6 +7,7 @@ import { runSimulation } from './commands/simulate.js';
 import { loadBiasHarnessSamples, runBiasHarness } from './commands/bias-harness.js';
 import { scaffoldServerRoute, type ScaffoldFramework } from './commands/init.js';
 import { createQuestionPackFile, validateQuestionPackFile } from './commands/pack.js';
+import { runDashboard } from './commands/dashboard.js';
 import { formatBiasHarnessReport, formatPackValidation, formatSimulationReport } from './format.js';
 import { CLI_PACKAGE_NAME, CLI_PACKAGE_VERSION } from './index.js';
 
@@ -14,6 +15,7 @@ const HELP_TEXT = `${CLI_PACKAGE_NAME}@${CLI_PACKAGE_VERSION}
 
 Usage:
   interview-sdk init [--framework nextjs|node] [--dir <path>] [--force]
+  interview-sdk dashboard [--port <n>]
   interview-sdk simulate --config <path> [--persona <id,id,...>] [--json]
   interview-sdk bias-harness --config <path> --samples <path> [--runs <n>] [--variance-threshold <n>] [--json]
   interview-sdk pack validate <file>
@@ -93,6 +95,21 @@ async function runBiasHarnessCommand(args: string[]): Promise<number> {
   return report.warnings.length > 0 ? 1 : 0;
 }
 
+async function runDashboardCommand(args: string[]): Promise<number> {
+  const { values } = parseArgs({
+    args,
+    options: {
+      port: { type: 'string' },
+    },
+  });
+  await runDashboard({
+    ...(values.port ? { port: parseNumberFlag('port', values.port) } : {}),
+  });
+  // Resolves as soon as the server starts listening — the process itself
+  // stays alive because of the open server socket, exiting on Ctrl+C.
+  return 0;
+}
+
 async function runPack(args: string[]): Promise<number> {
   const [subcommand, ...rest] = args;
 
@@ -138,6 +155,8 @@ export async function main(argv: string[]): Promise<number> {
     switch (command) {
       case 'init':
         return await runInit(rest);
+      case 'dashboard':
+        return await runDashboardCommand(rest);
       case 'simulate':
         return await runSimulate(rest);
       case 'bias-harness':

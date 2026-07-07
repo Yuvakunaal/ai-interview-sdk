@@ -59,10 +59,13 @@ export const POST = createInterviewAnswerHandler(processor);`}</code>
 
       <h2>Voice input</h2>
       <p>
-        Pass a <code>transcribe</code> prop (typically a <code>VoiceProviderAdapter</code>&apos;s{' '}
-        <code>transcribe()</code>) to enable the mic button. In Server Mode, run the voice provider
-        adapter server-side too — proxy it through its own API route, the same way the
-        answer-scoring route works, so that key stays off the client as well.
+        Pass a <code>transcribe</code> prop (<code>(audio: Blob) =&gt; Promise&lt;string&gt;</code>)
+        to enable the mic button. A <code>VoiceProviderAdapter</code>&apos;s own{' '}
+        <code>transcribe()</code> takes an <code>ArrayBuffer</code>/<code>Uint8Array</code> and
+        returns a <code>TranscriptResult</code>, so wrap it: <code>{`async (audio) => (await voiceAdapter.transcribe(await audio.arrayBuffer())).text`}</code>.
+        In Server Mode, run the voice provider adapter server-side too — proxy it through its own
+        API route, the same way the answer-scoring route works, so that key stays off the client
+        as well.
       </p>
 
       <h2>Non-Next.js frameworks</h2>

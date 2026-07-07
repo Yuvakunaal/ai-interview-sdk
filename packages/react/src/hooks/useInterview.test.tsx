@@ -35,6 +35,26 @@ function fakeProcessor(results: ProcessAnswerResult[]): InterviewProcessor {
 }
 
 describe('useInterview', () => {
+  it('fails loud on an empty questions array, same guarantee <InterviewWidget> gives', () => {
+    const processor = fakeProcessor([{ evaluation: evaluation() }]);
+    expect(() =>
+      renderHook(() => useInterview({ questions: [], rubric, processor })),
+    ).toThrow(/Invalid interview configuration/);
+  });
+
+  it('fails loud on an invalid rubric weight for headless (non-widget) usage', () => {
+    const processor = fakeProcessor([{ evaluation: evaluation() }]);
+    expect(() =>
+      renderHook(() =>
+        useInterview({
+          questions,
+          rubric: [{ id: 'technical', label: 'Technical', weight: -1 }],
+          processor,
+        }),
+      ),
+    ).toThrow(/Invalid interview configuration/);
+  });
+
   it('starts not_started and moves to in_progress on start()', () => {
     const processor = fakeProcessor([{ evaluation: evaluation() }]);
     const { result } = renderHook(() => useInterview({ questions, rubric, processor }));
@@ -105,6 +125,45 @@ describe('useInterview', () => {
     await waitFor(() => expect(result.current.status).toBe('completed'));
     expect(result.current.report?.totalScore).toBe(100);
     expect(onSessionEnd).toHaveBeenCalledWith(expect.objectContaining({ totalScore: 100 }));
+  });
+
+  it('ends the interview early and builds a report from whatever was answered so far', async () => {
+    const onSessionEnd = vi.fn();
+    const processor = fakeProcessor([{ evaluation: evaluation({ totalScore: 80 }) }]);
+    const { result } = renderHook(() => useInterview({ questions, rubric, processor, onSessionEnd }));
+
+    act(() => result.current.start());
+    await act(async () => {
+      await result.current.submitAnswer('It uses buckets.');
+    });
+    await waitFor(() => expect(result.current.currentQuestion?.id).toBe('q2'));
+
+    // Only q1 was ever answered — q2 never gets a turn.
+    act(() => result.current.endInterview());
+
+    expect(result.current.status).toBe('completed');
+    expect(result.current.report?.transcript).toHaveLength(1);
+    expect(onSessionEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not rebuild the report if endInterview is called after natural completion', async () => {
+    const onSessionEnd = vi.fn();
+    const processor = fakeProcessor([{ evaluation: evaluation({ totalScore: 100 }) }]);
+    const { result } = renderHook(() =>
+      useInterview({ questions: [questions[0]!], rubric, processor, onSessionEnd }),
+    );
+
+    act(() => result.current.start());
+    await act(async () => {
+      await result.current.submitAnswer('It uses buckets.');
+    });
+    await waitFor(() => expect(result.current.status).toBe('completed'));
+
+    const firstReport = result.current.report;
+    act(() => result.current.endInterview());
+
+    expect(result.current.report).toBe(firstReport);
+    expect(onSessionEnd).toHaveBeenCalledTimes(1);
   });
 
   it('ignores a second submitAnswer call while the first is still in flight', async () => {
@@ -189,5 +248,113 @@ describe('useInterview', () => {
 
     expect(result.current.error).toBeUndefined();
     await waitFor(() => expect(result.current.currentQuestion?.id).toBe('q2'));
+  });
+
+  it('defers advancing past a question if the candidate pauses while it is being scored, and applies it on resume', async () => {
+    let resolveScoring!: (value: ProcessAnswerResult) => void;
+    const processor: InterviewProcessor = {
+      processAnswer: vi.fn(
+        () => new Promise<ProcessAnswerResult>((resolve) => (resolveScoring = resolve)),
+      ),
+    };
+    const { result } = renderHook(() => useInterview({ questions, rubric, processor }));
+
+    act(() => result.current.start());
+
+    let submitCall!: Promise<void>;
+    act(() => {
+      submitCall = result.current.submitAnswer('It uses buckets.');
+    });
+
+    // Candidate pauses while the AI is still scoring the in-flight answer.
+    act(() => result.current.pause());
+    expect(result.current.status).toBe('paused');
+
+    await act(async () => {
+      resolveScoring({ evaluation: evaluation({ totalScore: 90 }) });
+      await submitCall;
+    });
+
+    // The real score lands immediately — it isn't lost just because the
+    // session is paused.
+    expect(result.current.transcript).toHaveLength(1);
+    // But the question index must not silently jump forward behind the
+    // paused screen.
+    expect(result.current.status).toBe('paused');
+    expect(result.current.currentQuestion?.id).toBe('q1');
+
+    act(() => result.current.resume());
+
+    expect(result.current.status).toBe('in_progress');
+    expect(result.current.currentQuestion?.id).toBe('q2');
+  });
+
+  it('preserves the already-scored answer in the final report if the interview ends instead of resuming', async () => {
+    let resolveScoring!: (value: ProcessAnswerResult) => void;
+    const processor: InterviewProcessor = {
+      processAnswer: vi.fn(
+        () => new Promise<ProcessAnswerResult>((resolve) => (resolveScoring = resolve)),
+      ),
+    };
+    const { result } = renderHook(() => useInterview({ questions, rubric, processor }));
+
+    act(() => result.current.start());
+
+    let submitCall!: Promise<void>;
+    act(() => {
+      submitCall = result.current.submitAnswer('It uses buckets.');
+    });
+
+    act(() => result.current.pause());
+
+    await act(async () => {
+      resolveScoring({ evaluation: evaluation({ totalScore: 90 }) });
+      await submitCall;
+    });
+
+    // Candidate never resumes — they end the interview straight from pause.
+    act(() => result.current.endInterview());
+
+    expect(result.current.status).toBe('completed');
+    expect(result.current.report?.transcript).toHaveLength(1);
+  });
+
+  it('does not double-fire onSessionEnd if endInterview is called while an answer is still being scored', async () => {
+    const onSessionEnd = vi.fn();
+    let resolveScoring!: (value: ProcessAnswerResult) => void;
+    const processor: InterviewProcessor = {
+      processAnswer: vi.fn(
+        () => new Promise<ProcessAnswerResult>((resolve) => (resolveScoring = resolve)),
+      ),
+    };
+    const { result } = renderHook(() =>
+      useInterview({ questions, rubric, processor, onSessionEnd }),
+    );
+
+    act(() => result.current.start());
+
+    let submitCall!: Promise<void>;
+    act(() => {
+      submitCall = result.current.submitAnswer('It uses buckets.');
+    });
+
+    // Candidate ends the interview outright while the last answer is still
+    // in flight, instead of pausing.
+    act(() => result.current.endInterview());
+    expect(result.current.status).toBe('completed');
+    expect(onSessionEnd).toHaveBeenCalledTimes(1);
+    const reportAtEnd = result.current.report;
+
+    await act(async () => {
+      resolveScoring({ evaluation: evaluation({ totalScore: 90 }) });
+      await submitCall;
+    });
+
+    // The score still lands (real data isn't discarded)...
+    expect(result.current.transcript).toHaveLength(1);
+    // ...but it must not silently re-advance an already-completed session
+    // or fire the developer's callback a second time with a different report.
+    expect(onSessionEnd).toHaveBeenCalledTimes(1);
+    expect(result.current.report).toBe(reportAtEnd);
   });
 });

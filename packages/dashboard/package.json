@@ -1,0 +1,31 @@
+{
+  "name": "@interview-sdk/dashboard",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Local customize-and-copy-code UI, built to static assets and served by `interview-sdk dashboard` (@interview-sdk/cli). Never published.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@interview-sdk/core": "workspace:*",
+    "@interview-sdk/react": "workspace:*",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "typescript": "^6.0.3",
+    "vite": "8.1.3",
+    "vitest": "^4.1.9"
+  }
+}

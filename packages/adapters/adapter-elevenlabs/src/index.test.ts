@@ -68,7 +68,7 @@ describe('ElevenLabsAdapter', () => {
       const adapter = new ElevenLabsAdapter({
         client: fakeClient({ convert }),
         voiceId: 'JBFqnCBsd6RMkjVDRZzb',
-        model: 'eleven_flash_v2_5',
+        speakModel: 'eleven_flash_v2_5',
       });
 
       await adapter.synthesize('Hello there');

@@ -15,15 +15,27 @@ npm install @interview-sdk/core @interview-sdk/adapter-elevenlabs
 ## Usage
 
 ```ts
-import { AdapterRegistry } from '@interview-sdk/core';
 import { ElevenLabsAdapter } from '@interview-sdk/adapter-elevenlabs';
 
-const registry = new AdapterRegistry();
-registry.registerVoiceProvider(new ElevenLabsAdapter({ apiKey: process.env.ELEVENLABS_API_KEY }));
+const voiceAdapter = new ElevenLabsAdapter({ apiKey: process.env.ELEVENLABS_API_KEY });
+```
+
+`<InterviewWidget>`'s `transcribe`/`synthesize` props are plain functions
+(`(audio: Blob) => Promise<string>` / `(text: string) => Promise<SynthesisResult>`),
+not a `VoiceProviderAdapter` instance — `synthesize` matches directly, but
+`transcribe` needs a one-line adapter since `VoiceProviderAdapter.transcribe`
+takes an `ArrayBuffer`/`Uint8Array` and returns a `TranscriptResult`:
+
+```tsx
+<InterviewWidget
+  transcribe={async (audio) => (await voiceAdapter.transcribe(await audio.arrayBuffer())).text}
+  synthesize={voiceAdapter.synthesize.bind(voiceAdapter)}
+  // ...
+/>
 ```
 
 `ElevenLabsAdapter` accepts an optional `voiceId` (defaults to ElevenLabs'
-prebuilt "Rachel" voice), `model` (TTS, defaults to `eleven_multilingual_v2`),
+prebuilt "Rachel" voice), `speakModel` (TTS, defaults to `eleven_multilingual_v2`),
 `transcribeModel` (STT, defaults to `scribe_v2`), and an optional
 pre-configured `client` for testing.
 

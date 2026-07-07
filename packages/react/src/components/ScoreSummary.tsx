@@ -13,9 +13,12 @@ export function ScoreSummary({ totalScore, rubric, dimensionAverages }: ScoreSum
 
   return (
     <section className="isdk-score-summary" aria-labelledby={headingId}>
-      <h2 className="isdk-score-summary__title" id={headingId}>
+      {/* h3: this section always nests inside ReportCard's own "Interview
+          Report" h2, as a sibling of its "Strengths"/"Areas for
+          improvement" h3 sections — not a peer of the report's own title. */}
+      <h3 className="isdk-score-summary__title" id={headingId}>
         Score Summary
-      </h2>
+      </h3>
       <p className="isdk-score-summary__total">
         Overall score:{' '}
         <strong className={`isdk-chip isdk-chip--${scoreTier(totalScore)} isdk-tabular`}>

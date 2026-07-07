@@ -18,7 +18,7 @@ afterEach(async () => {
 describe('scaffoldServerRoute', () => {
   it('writes a Next.js route handler by default', async () => {
     const result = await scaffoldServerRoute({ dir });
-    expect(result.filesWritten).toHaveLength(1);
+    expect(result.filesWritten).toHaveLength(2);
     expect(result.filesWritten[0]).toBe(join(dir, 'app/api/interview/answer/route.ts'));
 
     const content = await readFile(result.filesWritten[0]!, 'utf8');
@@ -32,6 +32,21 @@ describe('scaffoldServerRoute', () => {
 
     const content = await readFile(result.filesWritten[0]!, 'utf8');
     expect(content).toContain('createServer');
+  });
+
+  it('also writes a .env.example alongside the route, listing the env vars the route reads', async () => {
+    const result = await scaffoldServerRoute({ dir });
+    expect(result.filesWritten[1]).toBe(join(dir, '.env.example'));
+
+    const content = await readFile(result.filesWritten[1]!, 'utf8');
+    expect(content).toContain('INTERVIEW_SIGNING_SECRET=');
+    expect(content).toContain('OPENAI_API_KEY=');
+  });
+
+  it('refuses to overwrite an existing .env.example without --force', async () => {
+    await scaffoldServerRoute({ dir });
+    await rm(join(dir, 'app'), { recursive: true, force: true }); // route file gone, .env.example remains
+    await expect(scaffoldServerRoute({ dir })).rejects.toThrow(CliConfigError);
   });
 
   it('creates nested directories as needed', async () => {

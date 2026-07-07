@@ -42,18 +42,25 @@ describe('InterviewWidget', () => {
     expect(renderInvalid).toThrow(/requires an `adapter` prop/);
   });
 
-  it('fails loud on an invalid rubric via validateInterviewConfig', () => {
+  it('shows a clear, recoverable error for an invalid rubric via validateInterviewConfig', () => {
+    // Unlike the mode/adapter checks above, an invalid rubric is caught by
+    // InterviewErrorBoundary rather than thrown synchronously — questions
+    // and rubric are exactly the props a host app (a question builder,
+    // this SDK's own dashboard) is likely to edit live, so this must never
+    // be able to take the whole host page down with it. It still fails
+    // clearly and immediately; it just renders instead of throwing.
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const adapter = fakeAdapter(['{}']);
-    const renderInvalid = () =>
-      render(
-        <InterviewWidget
-          questions={questions}
-          rubric={[{ id: 'technical', label: 'Technical', weight: -1 }]}
-          mode="client"
-          adapter={adapter}
-        />,
-      );
-    expect(renderInvalid).toThrow(/Invalid interview configuration/);
+    render(
+      <InterviewWidget
+        questions={questions}
+        rubric={[{ id: 'technical', label: 'Technical', weight: -1 }]}
+        mode="client"
+        adapter={adapter}
+      />,
+    );
+    expect(screen.getByText(/Invalid interview configuration/)).toBeInTheDocument();
+    consoleError.mockRestore();
   });
 
   it('refuses to run Client Mode under NODE_ENV=production without the override flag', () => {
@@ -194,6 +201,21 @@ describe('InterviewWidget', () => {
     expect(screen.getByRole('heading', { name: 'Explain hash maps.' })).toBeInTheDocument();
   });
 
+  it('pausing with a partially typed answer does not submit it', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter(['{}']);
+    render(
+      <InterviewWidget questions={questions} rubric={rubric} mode="client" adapter={adapter} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    await user.type(screen.getByLabelText('Your answer'), 'Partial thought');
+    await user.click(screen.getByRole('button', { name: 'Pause' }));
+
+    expect(screen.getByRole('button', { name: 'Resume' })).toBeInTheDocument();
+    expect(adapter.complete).not.toHaveBeenCalled();
+  });
+
   it('runs in Server Mode by POSTing to the configured endpoint', async () => {
     const user = userEvent.setup();
     const fetchImpl = vi.fn(
@@ -268,5 +290,204 @@ describe('InterviewWidget', () => {
 
     playSpy.mockRestore();
     vi.unstubAllGlobals();
+  });
+
+  it('shows the optional role title in the header once the interview is underway', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter(['{}']);
+    render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        roleTitle="Senior Software Engineer — Round 2"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    expect(screen.getByText('Senior Software Engineer — Round 2')).toBeInTheDocument();
+  });
+
+  it('shows the interview progress checklist, one row per question', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter(['{}']);
+    render(
+      <InterviewWidget questions={questions} rubric={rubric} mode="client" adapter={adapter} />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    expect(screen.getByRole('list', { name: 'Interview progress' })).toBeInTheDocument();
+    expect(screen.getByText('Explain binary search.')).toBeInTheDocument();
+  });
+
+  it('ends the interview early via the End Interview button and shows a report from partial answers', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter([JSON.stringify({ dimensionScores: { technical: 90 } })]);
+    const onSessionEnd = vi.fn();
+    render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        onSessionEnd={onSessionEnd}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    await user.type(screen.getByLabelText('Your answer'), 'It uses buckets.');
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Explain binary search.' })).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'End Interview' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Interview Report' })).toBeInTheDocument(),
+    );
+    expect(onSessionEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes onExportError through to the report, since jspdf is never installed in this environment', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:fake-url'),
+      revokeObjectURL: vi.fn(),
+    });
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {});
+    const adapter = fakeAdapter([JSON.stringify({ dimensionScores: { technical: 90 } })]);
+    const onExportError = vi.fn();
+    render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        onExportError={onExportError}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    await user.type(screen.getByLabelText('Your answer'), 'It uses buckets.');
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Explain binary search.' })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole('button', { name: 'End Interview' }));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Interview Report' })).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Export PDF' }));
+    await waitFor(() => expect(onExportError).toHaveBeenCalledWith(expect.any(Error), 'pdf'));
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "PDF export isn't available here — downloaded a JSON file instead.",
+    );
+
+    clickSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('never shows the REC badge unless the mic is genuinely recording', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter(['{}']);
+    const transcribe = vi.fn(async () => 'an answer');
+    render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        transcribe={transcribe}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    expect(screen.queryByText('● REC')).not.toBeInTheDocument();
+  });
+
+  it('applies className/style to the root shell in every session state', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter([JSON.stringify({ dimensionScores: { technical: 90 } })]);
+    const { container } = render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        className="my-shell"
+        style={{ height: '100dvh' }}
+      />,
+    );
+
+    const shell = () => container.firstElementChild as HTMLElement;
+
+    // not_started
+    expect(shell()).toHaveClass('isdk-widget', 'my-shell');
+    expect(shell()).toHaveStyle({ height: '100dvh' });
+
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    // in_progress
+    expect(shell()).toHaveClass('isdk-widget', 'my-shell');
+    expect(shell()).toHaveStyle({ height: '100dvh' });
+
+    await user.click(screen.getByRole('button', { name: 'Pause' }));
+    // paused
+    expect(shell()).toHaveClass('isdk-widget', 'my-shell');
+    await user.click(screen.getByRole('button', { name: 'Resume' }));
+
+    await user.type(screen.getByLabelText('Your answer'), 'It uses buckets.');
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Explain binary search.' })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole('button', { name: 'End Interview' }));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Interview Report' })).toBeInTheDocument(),
+    );
+    // completed
+    expect(shell()).toHaveClass('isdk-widget', 'my-shell');
+  });
+
+  it('passes the candidate name through to the candidate tile', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter(['{}']);
+    const transcribe = vi.fn(async () => 'an answer');
+    render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        transcribe={transcribe}
+        candidateName="Alex Chen"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    expect(screen.getByText('Alex Chen')).toBeInTheDocument();
+  });
+
+  it('uses the same candidate name in the transcript sidebar as on the candidate tile, not the "You" default', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter([JSON.stringify({ dimensionScores: { technical: 90 } })]);
+    const transcribe = vi.fn(async () => 'an answer');
+    render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        transcribe={transcribe}
+        candidateName="Alex Chen"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    await user.type(screen.getByRole('textbox'), 'It uses buckets.');
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }));
+
+    await waitFor(() => expect(screen.getAllByText('Alex Chen').length).toBeGreaterThan(1));
+    expect(screen.queryByText('You')).not.toBeInTheDocument();
   });
 });

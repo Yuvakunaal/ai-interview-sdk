@@ -12,12 +12,16 @@ npm install @interview-sdk/core @interview-sdk/adapter-claude
 ## Usage
 
 ```ts
-import { AdapterRegistry } from '@interview-sdk/core';
 import { ClaudeAdapter } from '@interview-sdk/adapter-claude';
 
-const registry = new AdapterRegistry();
-registry.registerAIProvider(new ClaudeAdapter({ apiKey: process.env.ANTHROPIC_API_KEY }));
+const adapter = new ClaudeAdapter({ apiKey: process.env.ANTHROPIC_API_KEY });
+// <InterviewWidget adapter={adapter} mode="client" ... />
+// or: new ServerAnswerProcessor({ questions, rubric, adapter })
 ```
+
+(`AdapterRegistry` from `@interview-sdk/core` is a separate, optional utility
+for looking an adapter up by string id at runtime — most apps just pass the
+adapter directly like above.)
 
 `ClaudeAdapter` accepts an optional `model` (defaults to `claude-opus-4-8`)
 and an optional pre-configured `client` — useful for testing or for pointing

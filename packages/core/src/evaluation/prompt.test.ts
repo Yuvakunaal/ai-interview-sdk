@@ -97,4 +97,13 @@ describe('buildEvaluationRequest', () => {
     const request = buildEvaluationRequest({ question, rubric, answer });
     expect(request.responseFormat).toBe('json');
   });
+
+  it('instructs the model to score only the final answer, not blend in earlier turns\' credit', () => {
+    const answer: CandidateAnswer = { questionId: 'q1', text: 'It uses buckets.', submittedAt: 1 };
+    const request = buildEvaluationRequest({ question, rubric, answer });
+    const systemMessage = request.messages.find((m) => m.role === 'system');
+
+    expect(systemMessage?.content).toContain('Score ONLY the final candidate answer');
+    expect(systemMessage?.content).toContain('every dimension score MUST be 0');
+  });
 });

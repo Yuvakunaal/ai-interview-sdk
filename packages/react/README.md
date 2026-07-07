@@ -20,7 +20,10 @@ Also install at least one AI provider adapter (e.g.
 import { InterviewWidget } from '@interview-sdk/react';
 import { OpenAIAdapter } from '@interview-sdk/adapter-openai';
 
-const adapter = new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY });
+// Client Mode ships the key to the browser — it needs the NEXT_PUBLIC_/VITE_
+// prefix your bundler uses to expose an env var client-side. Use Server Mode
+// (see @interview-sdk/server) for production instead.
+const adapter = new OpenAIAdapter({ apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY });
 
 const questions = [
   {
@@ -104,18 +107,31 @@ and every sub-component work identically with or without it.
 Voice is two independent, both-optional props — set either, both, or
 neither:
 
-- **Input** — pass `transcribe` (`(audio: Blob) => Promise<string>`,
-  typically a `VoiceProviderAdapter`'s `transcribe()`) to enable the
-  `MicButton`. Always additive: a text `<textarea>` is rendered regardless
-  of whether `transcribe` is set, so candidates can always type instead of
-  (or in addition to) speaking.
-- **Output** — pass `synthesize` (`(text: string) => Promise<SynthesisResult>`,
-  typically a `VoiceProviderAdapter`'s `synthesize()`) to speak each
-  question and follow-up aloud via `QuestionAudio`. It autoplays once
-  audio is ready; if the browser blocks autoplay (no prior user gesture in
-  the tab), it falls back to a "Play question" button instead of failing
-  silently. Also additive — the prompt is always rendered as text
-  regardless of whether `synthesize` is set.
+- **Input** — pass `transcribe` (`(audio: Blob) => Promise<string>`) to
+  enable the `MicButton`. Always additive: a text `<textarea>` is rendered
+  regardless of whether `transcribe` is set, so candidates can always type
+  instead of (or in addition to) speaking.
+- **Output** — pass `synthesize` (`(text: string) => Promise<SynthesisResult>`)
+  to speak each question and follow-up aloud via `QuestionAudio`. It
+  autoplays once audio is ready; if the browser blocks autoplay (no prior
+  user gesture in the tab), it falls back to a "Play question" button
+  instead of failing silently. Also additive — the prompt is always
+  rendered as text regardless of whether `synthesize` is set.
+
+Both props are typically backed by a `VoiceProviderAdapter` from an
+`@interview-sdk/adapter-*` voice package, but the shapes aren't identical:
+`synthesize` matches `VoiceProviderAdapter.synthesize` exactly, while
+`transcribe` needs a one-line adapter, since `VoiceProviderAdapter.transcribe`
+takes an `ArrayBuffer`/`Uint8Array` and returns a `TranscriptResult`, not a
+`Blob`/`string`:
+
+```tsx
+<InterviewWidget
+  transcribe={async (audio) => (await voiceAdapter.transcribe(await audio.arrayBuffer())).text}
+  synthesize={voiceAdapter.synthesize.bind(voiceAdapter)}
+  // ...
+/>
+```
 
 Set both for a genuine voice-to-voice interview: the question is spoken,
 the candidate answers by speaking, and the transcript still shows every

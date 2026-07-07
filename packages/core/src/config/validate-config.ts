@@ -14,6 +14,14 @@ function isValidUrl(value: string): boolean {
   }
 }
 
+// Config can come from untyped sources (JSON, a CMS, the dashboard) where a
+// "string" field might actually be a number/object at runtime — checking
+// the type here means that fails validation cleanly instead of crashing
+// on `.trim()` a few lines down.
+function isBlank(value: unknown): boolean {
+  return typeof value !== 'string' || value.trim() === '';
+}
+
 /**
  * Fails loud on invalid developer configuration (§7 Configuration
  * Validation): empty questions, missing rubric, invalid weights, duplicate
@@ -29,14 +37,14 @@ export function validateInterviewConfig(config: InterviewConfig): void {
   } else {
     const seenIds = new Set<string>();
     for (const question of config.questions) {
-      if (!question.id || question.id.trim() === '') {
+      if (isBlank(question.id)) {
         issues.push('A question is missing an id.');
       } else if (seenIds.has(question.id)) {
         issues.push(`Duplicate question id: "${question.id}".`);
       } else {
         seenIds.add(question.id);
       }
-      if (!question.prompt || question.prompt.trim() === '') {
+      if (isBlank(question.prompt)) {
         issues.push(`Question "${question.id ?? '(unknown)'}" is missing a prompt.`);
       }
     }

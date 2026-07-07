@@ -28,29 +28,40 @@ OPENAI_API_KEY=sk-...
 INTERVIEW_SIGNING_SECRET=a-long-random-string`}</code>
       </pre>
 
-      <h2>3. Define questions + rubric (server-side)</h2>
+      <h2>3. Define questions + rubric once, shared by both sides</h2>
       <p>
-        This is your canonical config — <code>ServerAnswerProcessor</code> uses only{' '}
-        <code>answer.questionId</code> from each request to look one up. A tampered request that
-        includes a different question or rubric is ignored, not trusted.
+        Put them in their own module so the route and the widget import the exact same array —
+        no risk of the two copies drifting apart:
       </p>
       <pre>
-        <code>{`import { ServerAnswerProcessor, createInterviewAnswerHandler } from '@interview-sdk/server';
-import { OpenAIAdapter } from '@interview-sdk/adapter-openai';
-
-const processor = new ServerAnswerProcessor({
-  questions: [
-    { id: 'q1', prompt: 'Explain how hash maps handle collisions.', concepts: ['hashing', 'collisions'] },
-  ],
-  rubric: [{ id: 'technical', label: 'Technical depth', weight: 1 }],
-  adapter: new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY! }),
-  signingSecret: process.env.INTERVIEW_SIGNING_SECRET,
-});`}</code>
+        <code>{`// lib/questions.ts
+export const questions = [
+  { id: 'q1', prompt: 'Explain how hash maps handle collisions.', concepts: ['hashing', 'collisions'] },
+];
+export const rubric = [{ id: 'technical', label: 'Technical depth', weight: 1 }];`}</code>
       </pre>
-
-      <h3>4a. The API route (Next.js Route Handler)</h3>
+      <p>
+        This module-level copy is what the <em>client</em> renders (the prompt text, the rubric
+        labels on the report) — <code>ServerAnswerProcessor</code> below gets its own copy too,
+        but only ever trusts <em>that</em> copy: it uses just{' '}
+        <code>answer.questionId</code> from each request to look a question up, so a tampered
+        request that includes a different prompt or rubric is ignored, not trusted. The two copies
+        being identical is what keeps the UI honest about what&apos;s actually being scored — it
+        isn&apos;t a security boundary by itself.
+      </p>
       <pre>
         <code>{`// app/api/interview/answer/route.ts
+import { ServerAnswerProcessor, createInterviewAnswerHandler } from '@interview-sdk/server';
+import { OpenAIAdapter } from '@interview-sdk/adapter-openai';
+import { questions, rubric } from '../../../../lib/questions';
+
+const processor = new ServerAnswerProcessor({
+  questions,
+  rubric,
+  adapter: new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY! }),
+  signingSecret: process.env.INTERVIEW_SIGNING_SECRET,
+});
+
 export const POST = createInterviewAnswerHandler(processor);`}</code>
       </pre>
       <p>
@@ -61,10 +72,11 @@ export const POST = createInterviewAnswerHandler(processor);`}</code>
         <a href="/integrations/react-nextjs">React + Next.js guide</a> for the adapter snippet.
       </p>
 
-      <h3>4b. The widget (client-side)</h3>
+      <h2>4. The widget (client-side)</h2>
       <pre>
         <code>{`'use client';
 import { InterviewWidget } from '@interview-sdk/react';
+import { questions, rubric } from '../lib/questions';
 
 export default function Page() {
   return (

@@ -11,7 +11,8 @@ export default function Providers() {
         <code>VoiceProviderAdapter</code> interface from <code>@interview-sdk/core</code> and
         normalizes provider errors onto the same <code>Provider*Error</code> taxonomy, so{' '}
         <code>withRetry</code> and <code>FailoverAdapter</code> work identically regardless of which
-        one you register. Swapping providers is a one-line change via <code>AdapterRegistry</code>.
+        one you use. Swapping providers is a one-line change: construct the new adapter and pass it
+        to the same <code>adapter</code> prop/option everywhere else already expects one.
       </p>
 
       <h2>OpenAI</h2>
@@ -105,15 +106,34 @@ new ElevenLabsAdapter({ apiKey: process.env.ELEVENLABS_API_KEY });`}</code>
         <code>transcribeModel</code> (STT, defaults to <code>scribe_v2</code>).
       </p>
 
-      <h2>Registering an adapter</h2>
+      <h2>Using an adapter</h2>
+      <p>
+        Construct the adapter and pass it directly wherever this SDK expects one —{' '}
+        <code>{`<InterviewWidget adapter={...}>`}</code> in Client Mode, or the <code>adapter</code>{' '}
+        constructor option on <code>ServerAnswerProcessor</code> in Server Mode:
+      </p>
+      <pre>
+        <code>{`import { OpenAIAdapter } from '@interview-sdk/adapter-openai';
+
+const adapter = new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY });
+// <InterviewWidget adapter={adapter} mode="client" ... />
+// or: new ServerAnswerProcessor({ questions, rubric, adapter })`}</code>
+      </pre>
+      <p>
+        <code>AdapterRegistry</code> (from <code>@interview-sdk/core</code>) is a separate, optional
+        utility for a narrower case: your own app looking an adapter up by string id at runtime,
+        e.g. a multi-tenant app where each customer&apos;s provider is chosen by data rather than by
+        your source code. It&apos;s not a required step — most apps never need it:
+      </p>
       <pre>
         <code>{`import { AdapterRegistry } from '@interview-sdk/core';
-import { OpenAIAdapter } from '@interview-sdk/adapter-openai';
 import { DeepgramAdapter } from '@interview-sdk/adapter-deepgram';
 
 const registry = new AdapterRegistry();
 registry.registerAIProvider(new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY }));
-registry.registerVoiceProvider(new DeepgramAdapter({ apiKey: process.env.DEEPGRAM_API_KEY }));`}</code>
+registry.registerVoiceProvider(new DeepgramAdapter({ apiKey: process.env.DEEPGRAM_API_KEY }));
+
+const adapter = registry.getAIProvider('openai'); // then pass this to InterviewWidget/the processor as usual`}</code>
       </pre>
 
       <h2>Multi-provider failover</h2>

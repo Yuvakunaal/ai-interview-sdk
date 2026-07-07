@@ -57,6 +57,44 @@ describe('InterviewFlowEngine session lifecycle', () => {
     expect(resumed.status).toBe('in_progress');
   });
 
+  it('ends a session early, before every question has been answered', () => {
+    const engine = new InterviewFlowEngine({ questions });
+    const handler = vi.fn();
+    engine.start();
+    engine.events.on('sessionEnd', handler);
+
+    const ended = engine.end();
+
+    expect(ended.status).toBe('completed');
+    expect(ended.completedAt).toBeDefined();
+    expect(ended.currentQuestionIndex).toBe(0);
+    expect(handler).toHaveBeenCalledWith({ sessionId: ended.sessionId });
+  });
+
+  it('ends a paused session too', () => {
+    const engine = new InterviewFlowEngine({ questions });
+    engine.start();
+    engine.pause();
+
+    const ended = engine.end();
+    expect(ended.status).toBe('completed');
+  });
+
+  it('is idempotent when end() is called on an already-completed session', () => {
+    const engine = new InterviewFlowEngine({ questions });
+    engine.start();
+    const first = engine.end();
+    const second = engine.end();
+    expect(second.completedAt).toBe(first.completedAt);
+  });
+
+  it('is a no-op when end() is called before the session has started', () => {
+    const engine = new InterviewFlowEngine({ questions });
+    const ended = engine.end();
+    expect(ended.status).toBe('not_started');
+    expect(ended.completedAt).toBeUndefined();
+  });
+
   it('advances through questions and completes after the last one', () => {
     const engine = new InterviewFlowEngine({ questions });
     engine.start();
@@ -148,6 +186,19 @@ describe('InterviewFlowEngine.recordFollowUp', () => {
     engine.start();
     engine.recordFollowUp('Follow-up 1');
     expect(engine.askedFollowUpsForCurrentQuestion()).toEqual(['Follow-up 1']);
+  });
+
+  it("a question's own maxFollowUps overrides the session-wide maxFollowUpDepth", () => {
+    const questionsWithOverride: Question[] = [
+      { id: 'q1', prompt: 'Question one', maxFollowUps: 0 },
+      { id: 'q2', prompt: 'Question two' },
+    ];
+    const engine = new InterviewFlowEngine({
+      questions: questionsWithOverride,
+      maxFollowUpDepth: 2,
+    });
+    engine.start();
+    expect(() => engine.recordFollowUp('Follow-up 1')).toThrow(/max depth \(0\)/);
   });
 });
 

@@ -54,13 +54,13 @@ export default function Security() {
             </td>
           </tr>
           <tr>
-            <td>Sandbox escape (Coding Interview Mode)</td>
+            <td>Sandbox escape (<a href="/coding-interviews">Coding Interview Mode</a>)</td>
             <td>
               Isolated in its own package (<code>@interview-sdk/coding</code>) so a vulnerability
               there can&apos;t reach the rest of the SDK. The default executor runs candidate code
-              in Docker with <code>--network=none</code>, a read-only rootfs, and resource limits —
-              never Node&apos;s <code>vm</code> module or <code>vm2</code>, both documented as
-              escapable.
+              in Docker with <code>--network=none</code>, a read-only rootfs, dropped capabilities,
+              and resource limits — never Node&apos;s <code>vm</code> module or <code>vm2</code>,
+              both documented as escapable.
             </td>
           </tr>
         </tbody>

@@ -25,6 +25,41 @@ export class RubricValidationError extends InterviewSdkError {
 
 export class DuplicateSubmissionError extends InterviewSdkError {}
 
+/**
+ * The raw (untrimmed) answer text exceeded the hard length cap enforced
+ * before any AI call is made. Distinct from the `very_long_answer`
+ * evaluation flag, which still scores a long-but-reasonable answer — this
+ * error exists to stop a pathologically large payload (abuse, or a client
+ * bug) from ever being forwarded to a paid provider API.
+ */
+export class AnswerTooLongError extends InterviewSdkError {
+  readonly maxLength: number;
+  readonly actualLength: number;
+
+  constructor(maxLength: number, actualLength: number) {
+    super(`Answer text is ${actualLength} characters, exceeding the ${maxLength}-character limit.`);
+    this.maxLength = maxLength;
+    this.actualLength = actualLength;
+  }
+}
+
+/**
+ * `previousTurns` is client-supplied (see ServerAnswerProcessor) and, unlike
+ * the current answer, has no natural single-answer length check to bound
+ * it — a client could otherwise attach an arbitrarily large fabricated
+ * history to inflate AI provider token costs on every request.
+ */
+export class TooManyPreviousTurnsError extends InterviewSdkError {
+  readonly maxTurns: number;
+  readonly actualTurns: number;
+
+  constructor(maxTurns: number, actualTurns: number) {
+    super(`Received ${actualTurns} previous turns, exceeding the ${maxTurns}-turn limit.`);
+    this.maxTurns = maxTurns;
+    this.actualTurns = actualTurns;
+  }
+}
+
 export class SessionExpiredError extends InterviewSdkError {}
 
 export class FollowUpDepthExceededError extends InterviewSdkError {}

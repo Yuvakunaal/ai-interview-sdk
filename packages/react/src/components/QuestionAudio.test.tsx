@@ -1,5 +1,5 @@
 import type { SynthesisResult } from '@interview-sdk/core';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QuestionAudio } from './QuestionAudio.js';
@@ -113,5 +113,87 @@ describe('QuestionAudio', () => {
     await waitFor(() => expect(synthesize).toHaveBeenCalledTimes(2));
     expect(synthesize).toHaveBeenLastCalledWith('Explain binary search.');
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:fake-url');
+  });
+
+  // jsdom's mocked play() (above) does not cause the <audio> element to fire
+  // a real 'play'/'pause'/'ended' event on its own — these must be dispatched
+  // manually to exercise the turn-state callbacks a caller relies on.
+  it('calls onPlaybackStart when the audio element fires a real play event', async () => {
+    const synthesize = vi.fn(async () => result());
+    const onPlaybackStart = vi.fn();
+    const { container } = render(
+      <QuestionAudio text="Explain hash maps." synthesize={synthesize} onPlaybackStart={onPlaybackStart} />,
+    );
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    fireEvent(container.querySelector('audio')!, new Event('play'));
+
+    expect(onPlaybackStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onPlaybackEnd when the audio element fires a real ended event', async () => {
+    const synthesize = vi.fn(async () => result());
+    const onPlaybackEnd = vi.fn();
+    const { container } = render(
+      <QuestionAudio text="Explain hash maps." synthesize={synthesize} onPlaybackEnd={onPlaybackEnd} />,
+    );
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    const audio = container.querySelector('audio')!;
+    fireEvent(audio, new Event('play'));
+    fireEvent(audio, new Event('ended'));
+
+    expect(onPlaybackEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onPlaybackEnd on a real pause event too', async () => {
+    const synthesize = vi.fn(async () => result());
+    const onPlaybackEnd = vi.fn();
+    const { container } = render(
+      <QuestionAudio text="Explain hash maps." synthesize={synthesize} onPlaybackEnd={onPlaybackEnd} />,
+    );
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    const audio = container.querySelector('audio')!;
+    fireEvent(audio, new Event('play'));
+    fireEvent(audio, new Event('pause'));
+
+    expect(onPlaybackEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders a presence indicator alongside the control by default', async () => {
+    const synthesize = vi.fn(async () => result());
+    const { container } = render(<QuestionAudio text="Explain hash maps." synthesize={synthesize} />);
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    expect(container.querySelector('.isdk-question-audio__orb')).toBeInTheDocument();
+  });
+
+  it('omits the presence indicator when showLevelMeter is false', async () => {
+    const synthesize = vi.fn(async () => result());
+    const { container } = render(
+      <QuestionAudio text="Explain hash maps." synthesize={synthesize} showLevelMeter={false} />,
+    );
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    expect(container.querySelector('.isdk-question-audio__orb')).not.toBeInTheDocument();
+  });
+
+  it('mutes the underlying audio element without affecting playback itself', async () => {
+    const synthesize = vi.fn(async () => result());
+    const { container } = render(
+      <QuestionAudio text="Explain hash maps." synthesize={synthesize} muted />,
+    );
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    expect(container.querySelector('audio')).toHaveProperty('muted', true);
+  });
+
+  it('is unmuted by default', async () => {
+    const synthesize = vi.fn(async () => result());
+    const { container } = render(<QuestionAudio text="Explain hash maps." synthesize={synthesize} />);
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    expect(container.querySelector('audio')).toHaveProperty('muted', false);
   });
 });

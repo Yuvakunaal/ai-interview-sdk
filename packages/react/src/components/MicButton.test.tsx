@@ -185,4 +185,92 @@ describe('MicButton', () => {
     await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
     expect(onError.mock.calls[0]![0].message).toMatch(/does not support microphone capture/);
   });
+
+  it('calls onRecordingChange on start/stop transitions, skipping the initial mount', async () => {
+    const user = userEvent.setup();
+    const createRecorder = vi.fn(async () => fakeRecorder(new Blob(['audio'])));
+    const onRecordingChange = vi.fn();
+    render(
+      <MicButton
+        transcribe={vi.fn(async () => 'text')}
+        onTranscript={vi.fn()}
+        createRecorder={createRecorder}
+        onRecordingChange={onRecordingChange}
+      />,
+    );
+
+    expect(onRecordingChange).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button'));
+    expect(onRecordingChange).toHaveBeenNthCalledWith(1, true);
+
+    await user.click(screen.getByRole('button', { name: 'Stop recording' }));
+    await waitFor(() => expect(onRecordingChange).toHaveBeenNthCalledWith(2, false));
+  });
+
+  it('applies the emphasized modifier class when the emphasized prop is set', () => {
+    render(<MicButton transcribe={vi.fn()} onTranscript={vi.fn()} emphasized />);
+    expect(screen.getByRole('button')).toHaveClass('isdk-btn--mic-invite');
+  });
+
+  it('does not apply the emphasized modifier class by default', () => {
+    render(<MicButton transcribe={vi.fn()} onTranscript={vi.fn()} />);
+    expect(screen.getByRole('button')).not.toHaveClass('isdk-btn--mic-invite');
+  });
+
+  it('shows no level meter before recording starts, and an idle one once it does', async () => {
+    const user = userEvent.setup();
+    const createRecorder = vi.fn(async () => fakeRecorder(new Blob(['audio'])));
+    const { container } = render(
+      <MicButton
+        transcribe={vi.fn(async () => 'text')}
+        onTranscript={vi.fn()}
+        createRecorder={createRecorder}
+      />,
+    );
+
+    expect(container.querySelector('.isdk-audio-meter')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button'));
+    // No real AudioContext in jsdom, so isSupported stays false — the meter
+    // still renders (matching QuestionAudio's degrade behavior) but idle-styled.
+    expect(container.querySelector('.isdk-audio-meter')).toBeInTheDocument();
+    expect(container.querySelector('.isdk-audio-meter')).toHaveClass('isdk-audio-meter--idle');
+  });
+
+  it('hides the level meter entirely when showLevelMeter is false', async () => {
+    const user = userEvent.setup();
+    const createRecorder = vi.fn(async () => fakeRecorder(new Blob(['audio'])));
+    const { container } = render(
+      <MicButton
+        transcribe={vi.fn(async () => 'text')}
+        onTranscript={vi.fn()}
+        createRecorder={createRecorder}
+        showLevelMeter={false}
+      />,
+    );
+
+    await user.click(screen.getByRole('button'));
+    expect(container.querySelector('.isdk-audio-meter')).not.toBeInTheDocument();
+  });
+
+  it('calls onLevelsChange with live data so a caller can drive its own separate meter', async () => {
+    const user = userEvent.setup();
+    const createRecorder = vi.fn(async () => fakeRecorder(new Blob(['audio'])));
+    const onLevelsChange = vi.fn();
+    render(
+      <MicButton
+        transcribe={vi.fn(async () => 'text')}
+        onTranscript={vi.fn()}
+        createRecorder={createRecorder}
+        onLevelsChange={onLevelsChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button'));
+    await waitFor(() => expect(onLevelsChange).toHaveBeenCalled());
+    const [levels, isSupported] = onLevelsChange.mock.calls.at(-1)!;
+    expect(Array.isArray(levels)).toBe(true);
+    expect(typeof isSupported).toBe('boolean');
+  });
 });

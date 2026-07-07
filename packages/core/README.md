@@ -34,7 +34,10 @@ npm install @interview-sdk/core
 - **Developer configuration validation** (`validateInterviewConfig`) — fails
   loud (collects every issue, throws once) on empty questions, missing
   rubric, invalid weights, duplicate questions, invalid webhook URLs, and
-  invalid voice/language/difficulty settings.
+  invalid voice/language/difficulty settings. Note that `InterviewConfig`'s
+  `aiProvider`/`webhook` fields are validated schema, not auto-wired: you
+  still construct the actual `AIProviderAdapter` and `WebhookDispatcher`
+  yourself and read those config values in your own glue code to decide how.
 - A typed event emitter (`InterviewEventEmitter`) for session lifecycle
   events, so developers can pipe into their own analytics.
 
@@ -54,13 +57,13 @@ string-concatenated together — to mitigate prompt injection.
 
 ```ts
 import {
-  AdapterRegistry,
   InterviewFlowEngine,
   EvaluationEngine,
   FollowUpEngine,
   defineRubric,
   validateInterviewConfig,
 } from '@interview-sdk/core';
+import { OpenAIAdapter } from '@interview-sdk/adapter-openai';
 
 const config = {
   questions: [
@@ -78,8 +81,7 @@ const config = {
 validateInterviewConfig(config);
 
 const rubric = defineRubric(config.rubric);
-const registry = new AdapterRegistry();
-registry.registerAIProvider(/* an @interview-sdk/adapter-* instance */);
+const adapter = new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY! });
 
 const flow = new InterviewFlowEngine({ questions: config.questions });
 flow.start();
@@ -89,8 +91,24 @@ const evaluation = await new EvaluationEngine().evaluate({
   question: flow.currentQuestion()!,
   rubric,
   answer: flow.getState().answers.at(-1)!,
-  adapter: registry.getAIProvider('openai'),
+  adapter,
 });
+```
+
+Every real consumer in this SDK — `<InterviewWidget adapter={...}>`,
+`ClientModeProcessor`, `ServerAnswerProcessor` — takes an `AIProviderAdapter`
+instance directly like this, not through `AdapterRegistry`. Reach for
+`AdapterRegistry` only if your own app needs to look adapters up by string
+id at runtime (e.g. a multi-tenant app where each customer's AI provider is
+chosen by data, not by your source code):
+
+```ts
+import { AdapterRegistry } from '@interview-sdk/core';
+
+const registry = new AdapterRegistry();
+registry.registerAIProvider(new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY! }));
+
+const adapter = registry.getAIProvider('openai'); // then pass this to InterviewWidget/the processors as usual
 ```
 
 See the source under `src/` — every engine ships with its own test suite

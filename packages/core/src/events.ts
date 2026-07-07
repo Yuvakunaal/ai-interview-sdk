@@ -4,7 +4,12 @@ export interface InterviewEventMap {
   sessionStart: { sessionId: string };
   sessionPause: { sessionId: string };
   sessionResume: { sessionId: string };
-  sessionEnd: { sessionId: string; totalScore: number };
+  // No totalScore here — the flow engine only ever sees CandidateAnswer,
+  // never an EvaluationResult, so it structurally cannot compute a real
+  // score. Get the real total from useInterview's onSessionEnd callback
+  // (InterviewReport.totalScore) or by aggregating your own scoreComputed
+  // listeners — never from this event.
+  sessionEnd: { sessionId: string };
   sessionExpired: { sessionId: string };
   questionAdvance: { sessionId: string; questionId: string; index: number };
   followUpGenerated: { sessionId: string; questionId: string; prompt: string; depth: number };

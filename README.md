@@ -68,22 +68,27 @@ for what this means for anyone proposing a new feature.
 | [`@interview-sdk/core`](./packages/core)                                      | Flow, evaluation, rubric, and follow-up engine             |
 | [`@interview-sdk/react`](./packages/react)                                    | React components and hooks                                 |
 | [`@interview-sdk/server`](./packages/server)                                  | Production-mode scoring and key isolation                  |
-| [`@interview-sdk/coding`](./packages/coding)                                  | Sandboxed code execution for Coding Interview Mode         |
-| [`@interview-sdk/cli`](./packages/cli)                                        | Scaffolding, Interview Simulator, Bias Harness             |
+| [`@interview-sdk/coding`](./packages/coding)                                  | Standalone sandboxed code-execution + scoring engine for coding rounds — headless, bring your own editor UI |
+| [`@interview-sdk/cli`](./packages/cli)                                        | Scaffolding, local dashboard, Interview Simulator, Bias Harness |
 | [`@interview-sdk/adapter-openai`](./packages/adapters/adapter-openai)         | OpenAI provider adapter                                    |
 | [`@interview-sdk/adapter-claude`](./packages/adapters/adapter-claude)         | Anthropic Claude provider adapter                          |
 | [`@interview-sdk/adapter-gemini`](./packages/adapters/adapter-gemini)         | Google Gemini provider adapter                             |
 | [`@interview-sdk/adapter-deepgram`](./packages/adapters/adapter-deepgram)     | Deepgram voice provider adapter                            |
 | [`@interview-sdk/adapter-elevenlabs`](./packages/adapters/adapter-elevenlabs) | ElevenLabs voice provider adapter                          |
 | [`docs`](./packages/docs)                                                     | Documentation site (static Next.js export)                 |
+| [`@interview-sdk/landing`](./packages/landing)                                | Marketing/landing page — static React site, deployable standalone |
 | [`examples/server-mode-nextjs`](./packages/examples/server-mode-nextjs)       | Runnable Server Mode example (Next.js)                     |
 | [`examples/basic-demo`](./packages/examples/basic-demo)                       | Runnable Client Mode demo (Vite), mock adapter, no API key |
 
 ## Docs & examples
 
+- **`npx interview-sdk dashboard`** — the fastest way to see it: a local
+  tool to customize your question set, runtime mode, and theme against a
+  live preview, then copy the exact integration code for your app. See
+  [`@interview-sdk/cli`](./packages/cli).
 - **[Documentation site](./packages/docs)** — Quick Start, Production Setup,
-  provider guides, a rubric/evaluation cookbook, security & compliance,
-  and the Interview Simulator/Bias Harness walkthrough.
+  provider guides, a rubric/evaluation cookbook, Coding Interview Mode,
+  security & compliance, and the Interview Simulator/Bias Harness walkthrough.
   `pnpm --filter @interview-sdk/docs dev` to run it locally.
 - **[`examples/server-mode-nextjs`](./packages/examples/server-mode-nextjs)**
   — the production path: `<InterviewWidget mode="server" />` talking to a
@@ -156,7 +161,8 @@ including changesets.
 See [SECURITY.md](./SECURITY.md) to report a vulnerability, and
 [EDGE_CASES.md](./EDGE_CASES.md) for exactly which security guarantees this
 SDK provides architecturally versus which ones are your own infrastructure's
-responsibility.
+responsibility. CodeQL static analysis and Dependabot both run automatically
+on this repo.
 
 ## License
 

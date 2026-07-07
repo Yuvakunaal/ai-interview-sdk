@@ -70,6 +70,11 @@ describe('ReportCard', () => {
     expect(screen.getByText('collisions')).toBeInTheDocument();
   });
 
+  it('moves focus to the report heading on mount, so arriving here is announced to assistive tech', () => {
+    render(<ReportCard report={report()} rubric={rubric} />);
+    expect(screen.getByRole('heading', { name: 'Interview Report' })).toHaveFocus();
+  });
+
   it('shows "None identified." when there are no strengths or weaknesses', () => {
     render(<ReportCard report={report({ strengths: [], weaknesses: [] })} rubric={rubric} />);
     expect(screen.getAllByText('None identified.')).toHaveLength(2);
@@ -121,5 +126,30 @@ describe('ReportCard', () => {
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     const blob = createObjectURL.mock.calls[0]![0] as Blob;
     expect(blob.type).toBe('application/json');
+  });
+
+  it('shows a visible notice when PDF export falls back to JSON, so the mismatch is never silent', async () => {
+    const user = userEvent.setup();
+    render(<ReportCard report={report()} rubric={rubric} />);
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Export PDF' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        "PDF export isn't available here — downloaded a JSON file instead.",
+      ),
+    );
+  });
+
+  it('clears the fallback notice once a plain JSON export is clicked directly', async () => {
+    const user = userEvent.setup();
+    render(<ReportCard report={report()} rubric={rubric} />);
+
+    await user.click(screen.getByRole('button', { name: 'Export PDF' }));
+    await waitFor(() => expect(screen.getByRole('status')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Export JSON' }));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });

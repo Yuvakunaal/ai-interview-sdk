@@ -19,7 +19,7 @@ describe('InterviewEventEmitter', () => {
     emitter.on('sessionEnd', first);
     emitter.on('sessionEnd', second);
 
-    emitter.emit('sessionEnd', { sessionId: 'abc', totalScore: 90 });
+    emitter.emit('sessionEnd', { sessionId: 'abc' });
 
     expect(first).toHaveBeenCalledTimes(1);
     expect(second).toHaveBeenCalledTimes(1);

@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { AIProviderAdapter, CompletionRequest } from '../adapter/types.js';
-import { MalformedAdapterResponseError } from '../errors.js';
+import {
+  AnswerTooLongError,
+  MalformedAdapterResponseError,
+  TooManyPreviousTurnsError,
+} from '../errors.js';
 import { defineRubric } from '../rubric/rubric.js';
 import type { CandidateAnswer, Question } from '../types.js';
 import { EvaluationEngine } from './evaluation-engine.js';
@@ -185,6 +189,45 @@ describe('EvaluationEngine', () => {
     expect(result.flags).toEqual(['no_answer']);
   });
 
+  it('does not call the adapter for a bare "I don\'t know", and scores zero regardless of provider leniency', async () => {
+    // Observed in practice: an AI provider handed a follow-up answer of
+    // just "i dont know" a 75-90/100 partial score. This must never
+    // depend on any given model's leniency for such an unambiguous
+    // non-answer, so it's short-circuited before any provider call.
+    const adapter = fakeAdapter(
+      JSON.stringify({ dimensionScores: { technical: 80, communication: 75 } }),
+    );
+    const engine = new EvaluationEngine();
+
+    const result = await engine.evaluate({
+      question,
+      rubric,
+      answer: answer("I don't know"),
+      adapter,
+    });
+
+    expect(adapter.complete).not.toHaveBeenCalled();
+    expect(result.totalScore).toBe(0);
+    expect(result.flags).toEqual(['i_dont_know']);
+  });
+
+  it('still scores a hedged-but-real attempt via the adapter, not as a bare "don\'t know"', async () => {
+    const adapter = fakeAdapter(
+      JSON.stringify({ dimensionScores: { technical: 40, communication: 50 } }),
+    );
+    const engine = new EvaluationEngine();
+
+    const result = await engine.evaluate({
+      question,
+      rubric,
+      answer: answer("I don't know the exact term, but I think it's related to chaining."),
+      adapter,
+    });
+
+    expect(adapter.complete).toHaveBeenCalledTimes(1);
+    expect(result.totalScore).toBeGreaterThan(0);
+  });
+
   it('flags a very short answer while still scoring it via the adapter', async () => {
     const adapter = fakeAdapter(
       JSON.stringify({ dimensionScores: { technical: 20, communication: 20 } }),
@@ -207,6 +250,59 @@ describe('EvaluationEngine', () => {
     const result = await engine.evaluate({ question, rubric, answer: answer(longAnswer), adapter });
 
     expect(result.flags).toContain('very_long_answer');
+  });
+
+  it('rejects an answer past the hard length cap before ever calling the adapter', async () => {
+    const adapter = fakeAdapter('{}');
+    const engine = new EvaluationEngine();
+    const pathologicallyLongAnswer = 'a'.repeat(20_001);
+
+    await expect(
+      engine.evaluate({ question, rubric, answer: answer(pathologicallyLongAnswer), adapter }),
+    ).rejects.toThrow(AnswerTooLongError);
+    expect(adapter.complete).not.toHaveBeenCalled();
+  });
+
+  it('rejects a fabricated multi-turn history past the previous-turns cap before calling the adapter', async () => {
+    const adapter = fakeAdapter('{}');
+    const engine = new EvaluationEngine();
+    const previousTurns = Array.from({ length: 51 }, (_, i) => ({
+      question: { id: `p${i}`, prompt: 'Previous question' },
+      answer: answer('A previous answer.', { questionId: `p${i}` }),
+    }));
+
+    await expect(
+      engine.evaluate({
+        question,
+        rubric,
+        answer: answer('Buckets and hashing.'),
+        adapter,
+        previousTurns,
+      }),
+    ).rejects.toThrow(TooManyPreviousTurnsError);
+    expect(adapter.complete).not.toHaveBeenCalled();
+  });
+
+  it('rejects an oversized answer hiding inside previousTurns, not just the current answer', async () => {
+    const adapter = fakeAdapter('{}');
+    const engine = new EvaluationEngine();
+    const previousTurns = [
+      {
+        question: { id: 'p1', prompt: 'Previous question' },
+        answer: answer('a'.repeat(20_001), { questionId: 'p1' }),
+      },
+    ];
+
+    await expect(
+      engine.evaluate({
+        question,
+        rubric,
+        answer: answer('Buckets and hashing.'),
+        adapter,
+        previousTurns,
+      }),
+    ).rejects.toThrow(AnswerTooLongError);
+    expect(adapter.complete).not.toHaveBeenCalled();
   });
 
   it('passes through off-topic, "I don\'t know", avoidance, hint-request, and candidate-question flags', async () => {

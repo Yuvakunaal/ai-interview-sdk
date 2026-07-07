@@ -25,6 +25,7 @@ const SECTIONS: NavSection[] = [
     label: 'Guides',
     items: [
       { href: '/cookbook/rubric-evaluation', label: 'Rubric & evaluation cookbook' },
+      { href: '/coding-interviews', label: 'Coding Interview Mode' },
       { href: '/security', label: 'Security & compliance' },
       { href: '/trust-tooling', label: 'Simulator & Bias Harness' },
     ],

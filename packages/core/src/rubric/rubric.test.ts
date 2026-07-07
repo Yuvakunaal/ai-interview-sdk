@@ -18,6 +18,12 @@ describe('defineRubric', () => {
     );
   });
 
+  it('fails loud (not crashes) on a non-string dimension id from an untyped config source', () => {
+    expect(() =>
+      defineRubric([{ id: 123 as unknown as string, label: 'Technical', weight: 1 }]),
+    ).toThrow(/missing an id/);
+  });
+
   it('fails loud on duplicate dimension ids', () => {
     expect(() =>
       defineRubric([

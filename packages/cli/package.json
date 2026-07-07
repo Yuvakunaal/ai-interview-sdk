@@ -58,6 +58,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@interview-sdk/dashboard": "workspace:*",
     "@types/node": "^24.0.0"
   }
 }

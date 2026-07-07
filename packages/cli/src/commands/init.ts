@@ -77,6 +77,21 @@ const TEMPLATES: Record<ScaffoldFramework, { relativePath: string; content: () =
   node: { relativePath: 'interview-server.mjs', content: nodeServerTemplate },
 };
 
+const ENV_EXAMPLE_RELATIVE_PATH = '.env.example';
+
+function envExampleTemplate(): string {
+  return `# @interview-sdk/server signs each evaluation with this so a stored/displayed
+# report can be verified as untampered later (see @interview-sdk/server's
+# README, "Score integrity"). Optional, but recommended.
+INTERVIEW_SIGNING_SECRET=
+
+# The AI provider adapter in the scaffolded route is a TODO placeholder —
+# replace it with a real @interview-sdk/adapter-* instance (see that
+# package's own README), then add its required API key here, e.g.:
+# OPENAI_API_KEY=
+`;
+}
+
 /**
  * `interview-sdk init --mode=server` (§6): scaffolds a minimal backend
  * route wired to @interview-sdk/server, so a new project starts with
@@ -96,15 +111,20 @@ export async function scaffoldServerRoute(
 
   const dir = options.dir ?? process.cwd();
   const targetPath = join(dir, template.relativePath);
+  const envExamplePath = join(dir, ENV_EXAMPLE_RELATIVE_PATH);
 
   if (!options.force && (await fileExists(targetPath))) {
     throw new CliConfigError(
       `"${template.relativePath}" already exists. Pass --force to overwrite it.`,
     );
   }
+  if (!options.force && (await fileExists(envExamplePath))) {
+    throw new CliConfigError(`"${ENV_EXAMPLE_RELATIVE_PATH}" already exists. Pass --force to overwrite it.`);
+  }
 
   await mkdir(dirname(targetPath), { recursive: true });
   await writeFile(targetPath, template.content(), 'utf8');
+  await writeFile(envExamplePath, envExampleTemplate(), 'utf8');
 
-  return { filesWritten: [targetPath] };
+  return { filesWritten: [targetPath, envExamplePath] };
 }

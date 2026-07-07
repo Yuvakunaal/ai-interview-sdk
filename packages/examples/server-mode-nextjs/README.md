@@ -38,6 +38,21 @@ const processor = new ServerAnswerProcessor({
 That's the only change — `<InterviewWidget mode="server" />` on the client
 side doesn't need to know anything changed.
 
-This is also exactly what `npx interview-sdk init --framework nextjs`
-scaffolds (see `@interview-sdk/cli`), so this example doubles as what that
-command's output looks like wired up and running.
+`npx interview-sdk init --framework nextjs` (see `@interview-sdk/cli`)
+scaffolds the same shape of route, wired the same way — but with a
+fail-loud placeholder adapter instead of this example's mock one, since a
+freshly-scaffolded production project should refuse to run silently on fake
+data until you configure a real provider. Use this example to see the
+whole thing running end to end; use `init` to start a real project.
+
+## Verifying the final report
+
+Set `INTERVIEW_SIGNING_SECRET` and every evaluation `/api/interview/answer`
+returns is HMAC-signed. `app/page.tsx`'s `onSessionEnd` POSTs the finished
+report to `app/api/interview/complete/route.ts`, which re-verifies each
+per-turn signature with `verify()` from `@interview-sdk/server` before
+treating the report as trustworthy — the whole point being that the report
+`onSessionEnd` receives was assembled in the browser, which isn't a trusted
+execution environment. Try it: set the env var, open devtools, edit a
+score in the React state before the interview ends, and watch
+`/api/interview/complete` reject it.

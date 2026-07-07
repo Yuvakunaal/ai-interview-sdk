@@ -1,6 +1,7 @@
 import {
   InterviewFlowEngine,
   defineRubric,
+  validateInterviewConfig,
   type EvaluationTurn,
   type Question,
   type RubricDimensionInput,
@@ -26,6 +27,8 @@ export interface SubmitAnswerOptions {
 
 export interface UseInterviewResult {
   status: SessionState['status'];
+  /** Wall-clock time the session actually started, for a live elapsed-time display. Undefined until start() is called. */
+  startedAt: number | undefined;
   currentQuestion: Question | undefined;
   currentPrompt: string | undefined;
   isFollowUpPrompt: boolean;
@@ -36,6 +39,8 @@ export interface UseInterviewResult {
   start: () => void;
   pause: () => void;
   resume: () => void;
+  /** Voluntarily ends the session before every question has been answered, building a report from whatever's been answered so far. */
+  endInterview: () => void;
   submitAnswer: (text: string, opts?: SubmitAnswerOptions) => Promise<void>;
   retryLastAnswer: () => Promise<void>;
 }
@@ -49,6 +54,17 @@ interface PendingProcessAnswer {
 }
 
 export function useInterview(options: UseInterviewOptions): UseInterviewResult {
+  // Same guarantee <InterviewWidget> gives you — fails loud on empty
+  // questions, invalid rubric weights, duplicate ids, etc. — so headless
+  // consumers of this hook aren't left to discover a bad config from a
+  // more confusing downstream failure instead.
+  validateInterviewConfig({
+    questions: options.questions,
+    rubric: options.rubric,
+    maxFollowUpDepth: options.maxFollowUpDepth,
+    sessionTimeoutMs: options.sessionTimeoutMs,
+  });
+
   const rubric = useMemo(() => defineRubric(options.rubric), [options.rubric]);
 
   const [flow] = useState(
@@ -66,6 +82,13 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
   const [error, setError] = useState<Error | undefined>(undefined);
   const [report, setReport] = useState<InterviewReport | undefined>(undefined);
   const pendingRef = useRef<PendingProcessAnswer | undefined>(undefined);
+  // If the candidate pauses while an answer is mid-flight being scored, the
+  // AI call can't be cancelled — but applying its result's flow transition
+  // (advance/recordFollowUp) the instant it resolves would silently move
+  // the session forward behind a screen that still says "Paused". This
+  // stashes that transition to apply exactly once the candidate resumes,
+  // instead of either losing the real score or applying it invisibly.
+  const deferredTransitionRef = useRef<(() => void) | undefined>(undefined);
 
   const currentQuestion = options.questions[flowState.currentQuestionIndex];
   const askedFollowUps = currentQuestion
@@ -83,8 +106,26 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
   }, [flow]);
 
   const resume = useCallback(() => {
-    setFlowState(flow.resume());
+    const nextState = flow.resume();
+    setFlowState(nextState);
+    if (nextState.status === 'in_progress' && deferredTransitionRef.current) {
+      const applyDeferredTransition = deferredTransitionRef.current;
+      deferredTransitionRef.current = undefined;
+      applyDeferredTransition();
+    }
   }, [flow]);
+
+  const endInterview = useCallback(() => {
+    const wasAlreadyDone =
+      flow.getState().status === 'completed' || flow.getState().status === 'expired';
+    const nextState = flow.end();
+    setFlowState(nextState);
+    if (!wasAlreadyDone && nextState.status === 'completed') {
+      const finalReport = buildReport(nextState.sessionId, rubric, transcript);
+      setReport(finalReport);
+      options.onSessionEnd?.(finalReport);
+    }
+  }, [flow, rubric, transcript, options]);
 
   const runProcessor = useCallback(
     async (pending: PendingProcessAnswer) => {
@@ -112,18 +153,38 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
         ];
         setTranscript(nextTranscript);
         pendingRef.current = undefined;
+        flow.events.emit('scoreComputed', {
+          sessionId: flow.getState().sessionId,
+          questionId: pending.question.id,
+          result: result.evaluation,
+        });
 
-        if (result.followUp) {
-          setFlowState(flow.recordFollowUp(result.followUp.prompt));
-        } else {
-          const nextState = flow.advance();
-          setFlowState(nextState);
-          if (nextState.status === 'completed') {
-            const finalReport = buildReport(nextState.sessionId, rubric, nextTranscript);
-            setReport(finalReport);
-            options.onSessionEnd?.(finalReport);
+        const applyTransition = () => {
+          if (result.followUp) {
+            setFlowState(flow.recordFollowUp(result.followUp.prompt));
+          } else {
+            const nextState = flow.advance();
+            setFlowState(nextState);
+            if (nextState.status === 'completed') {
+              const finalReport = buildReport(nextState.sessionId, rubric, nextTranscript);
+              setReport(finalReport);
+              options.onSessionEnd?.(finalReport);
+            }
           }
+        };
+
+        const statusWhenScoringLanded = flow.getState().status;
+        if (statusWhenScoringLanded === 'paused') {
+          deferredTransitionRef.current = applyTransition;
+        } else if (statusWhenScoringLanded === 'in_progress') {
+          applyTransition();
         }
+        // Any other status (completed/expired) means the session was ended
+        // by other means — endInterview(), or expiry — while this answer
+        // was still being scored. The score itself is preserved above, but
+        // applying a late advance()/recordFollowUp() on top of an
+        // already-finished session would silently mutate it and could
+        // fire onSessionEnd a second time with a different report.
       } catch (caught) {
         setError(caught instanceof Error ? caught : new Error(String(caught)));
       } finally {
@@ -181,6 +242,7 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
 
   return {
     status: flowState.status,
+    startedAt: flowState.startedAt,
     currentQuestion,
     currentPrompt,
     isFollowUpPrompt,
@@ -191,6 +253,7 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
     start,
     pause,
     resume,
+    endInterview,
     submitAnswer,
     retryLastAnswer,
   };

@@ -118,7 +118,9 @@ describe('DockerCodeExecutionProvider', () => {
     await waitForSpawn(calls);
 
     timers.fire();
-    expect(timers.scheduledMs).toEqual([1234]);
+    // [1234] is the original timeout; the second entry is the grace-period
+    // fallback scheduled inside that callback (see next test).
+    expect(timers.scheduledMs[0]).toBe(1234);
     expect(calls[1]?.args).toEqual(expect.arrayContaining(['kill']));
 
     // Simulate docker actually killing the run container after our kill call.
@@ -127,6 +129,64 @@ describe('DockerCodeExecutionProvider', () => {
     const result = await resultPromise;
     expect(result.timedOut).toBe(true);
     expect(result.memoryExceeded).toBe(false);
+  });
+
+  it('force-settles and force-removes the container if the timeout kill never actually stops it', async () => {
+    const runChild = new FakeChildProcess();
+    const killChild = new FakeChildProcess();
+    const { spawnImpl, calls } = fakeSpawn([runChild, killChild]);
+    const timers = fakeTimers();
+    const provider = new DockerCodeExecutionProvider({
+      spawnImpl,
+      scheduleTimeout: timers.scheduleTimeout,
+    });
+
+    const resultPromise = provider.execute({
+      language: 'javascript',
+      code: 'while (true) {}',
+      timeoutMs: 1234,
+    });
+    await waitForSpawn(calls);
+
+    timers.fire(); // original timeout: attempts `docker kill`, schedules the grace-period fallback
+    // The container never actually stops — runChild.close() is deliberately
+    // never called, simulating a kill that silently didn't take effect.
+    timers.fire(); // grace-period fallback fires
+
+    expect(timers.scheduledMs).toEqual([1234, 3000]);
+    expect(calls.some((call) => call.args[0] === 'rm' && call.args.includes('-f'))).toBe(true);
+
+    const result = await resultPromise;
+    expect(result.timedOut).toBe(true);
+    expect(result.exitCode).toBeNull();
+  });
+
+  it('does not crash the process if the timeout-triggered docker kill itself errors', async () => {
+    const runChild = new FakeChildProcess();
+    const killChild = new FakeChildProcess();
+    const { spawnImpl, calls } = fakeSpawn([runChild, killChild]);
+    const timers = fakeTimers();
+    const provider = new DockerCodeExecutionProvider({
+      spawnImpl,
+      scheduleTimeout: timers.scheduleTimeout,
+    });
+
+    const resultPromise = provider.execute({
+      language: 'javascript',
+      code: 'while (true) {}',
+      timeoutMs: 1234,
+    });
+    await waitForSpawn(calls);
+
+    timers.fire();
+    // Simulate a docker-daemon hiccup on the kill call itself (e.g. ENOENT) —
+    // with no listener this would crash the whole host process.
+    killChild.emit('error', new Error('spawn docker ENOENT'));
+
+    runChild.close(137);
+
+    const result = await resultPromise;
+    expect(result.timedOut).toBe(true);
   });
 
   it('reports memoryExceeded for an untimed exit code 137', async () => {
@@ -195,8 +255,28 @@ describe('DockerCodeExecutionProvider', () => {
         'nobody',
         '--pids-limit',
         '64',
+        '--cap-drop',
+        'ALL',
+        '--security-opt',
+        'no-new-privileges',
       ]),
     );
+  });
+
+  it('runs the default JavaScript/Python images pinned by digest, not a mutable tag', async () => {
+    const child = new FakeChildProcess();
+    const { spawnImpl, calls } = fakeSpawn([child]);
+    const provider = new DockerCodeExecutionProvider({ spawnImpl });
+
+    const resultPromise = provider.execute({ language: 'javascript', code: 'x' });
+    await waitForSpawn(calls);
+    child.close(0);
+    await resultPromise;
+
+    // args end with [..., '-i', image, 'node', 'main.js'] — the run command
+    // (2 elements for javascript) follows the image.
+    const image = calls[0]!.args.at(-3);
+    expect(image).toMatch(/^node:20-alpine@sha256:[0-9a-f]{64}$/);
   });
 
   it('writes stdin to the container process', async () => {

@@ -18,17 +18,31 @@
   --isdk-ink: #16211c;
   --isdk-ink-soft: #57685d;
   --isdk-accent: #b8862a;
+  /* A darker variant for small accent-colored TEXT on paper/surface — the
+     base --isdk-accent is tuned for buttons/borders/icons (which only need
+     3:1 contrast, and already clear it) but falls short of the 4.5:1 text
+     needs at these sizes. Buttons/borders/icons keep using --isdk-accent
+     unchanged; only text labels use this one. */
+  --isdk-accent-text: #8a641f;
   --isdk-accent-ink: #241a06;
-  --isdk-pass: #2f7a52;
+  /* Nudged from #2f7a52 — was 4.48:1 on --isdk-pass-bg, just under the
+     4.5:1 chip/alert text needs; imperceptible visually. */
+  --isdk-pass: #2f7951;
   --isdk-pass-bg: #e4f1e9;
   --isdk-flag: #b23b2e;
   --isdk-flag-bg: #f6e3df;
+  /* Small-text variant of --isdk-flag on --isdk-neutral-bg (the candidate
+     tile background) — identical to --isdk-flag in light mode (already
+     clears 4.5:1 there); only dark mode needs a distinct, slightly
+     brighter value. */
+  --isdk-flag-text: #b23b2e;
   --isdk-neutral-bg: #e9ede2;
   --isdk-rule: #d9dfd1;
   --isdk-shadow: 0 1px 2px rgba(22, 33, 28, 0.06), 0 8px 24px rgba(22, 33, 28, 0.05);
 
   --isdk-radius: 4px;
   --isdk-radius-sm: 3px;
+  --isdk-radius-lg: calc(var(--isdk-radius) * 2.5);
   --isdk-spacing: 1.5rem;
 
   --isdk-font-display: ui-serif, Charter, 'Iowan Old Style', Georgia, 'Times New Roman', serif;
@@ -37,6 +51,26 @@
     sans-serif;
   --isdk-font-mono:
     ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono', Menlo, Consolas, monospace;
+
+  /* A faint grid texture for the open canvas around cards (lobby, paused,
+     report, and any in-progress screen shorter than the viewport) — a flat
+     fill reads as empty/unfinished there, this gives it quiet texture
+     without competing with content (which sits on its own opaque surface). */
+  --isdk-grid-texture:
+    repeating-linear-gradient(
+      to right,
+      color-mix(in srgb, var(--isdk-rule) 60%, transparent) 0,
+      color-mix(in srgb, var(--isdk-rule) 60%, transparent) 1px,
+      transparent 1px,
+      transparent 64px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--isdk-rule) 60%, transparent) 0,
+      color-mix(in srgb, var(--isdk-rule) 60%, transparent) 1px,
+      transparent 1px,
+      transparent 64px
+    );
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,15 +80,56 @@
     --isdk-ink: #eaf0e4;
     --isdk-ink-soft: #93a491;
     --isdk-accent: #e0ac3e;
+    --isdk-accent-text: #e0ac3e;
     --isdk-accent-ink: #1a1305;
     --isdk-pass: #4fa374;
-    --isdk-pass-bg: #1b3527;
+    /* Nudged slightly darker than the original #1b3527/#3a211c — both were
+       just under 4.5:1 against --isdk-pass/--isdk-flag text; this clears
+       it while staying visually indistinguishable from the original. */
+    --isdk-pass-bg: #193124;
     --isdk-flag: #dd6152;
-    --isdk-flag-bg: #3a211c;
+    --isdk-flag-bg: #311c18;
+    /* Slightly brighter than --isdk-flag — the candidate tile's neutral
+       background (#1e2a22) only clears 4.19:1 against the base flag color
+       in dark mode, just under the 4.5:1 the "Recording" status text needs. */
+    --isdk-flag-text: #e66555;
     --isdk-neutral-bg: #1e2a22;
     --isdk-rule: #253327;
     --isdk-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.35);
   }
+}
+
+/* Scoped to each component's own subtree, not a bare *, so importing this
+   stylesheet can never change box-sizing on unrelated host-page elements
+   (these five are every root class this stylesheet expects to be mounted
+   at, matching the shared rule just below). Without this, any element
+   that combines a percentage/fixed height with padding or a border (the
+   default content-box model adds those on top of that height instead of
+   inside it) renders taller than intended and spills past its own box —
+   which is exactly what made .isdk-widget__sidebar overflow
+   .isdk-widget__body and drag the whole widget, header included, into a
+   page-level scroll instead of scrolling internally on its own. */
+.isdk-widget,
+.isdk-widget *,
+.isdk-widget *::before,
+.isdk-widget *::after,
+.isdk-question-card,
+.isdk-question-card *,
+.isdk-question-card *::before,
+.isdk-question-card *::after,
+.isdk-report-card,
+.isdk-report-card *,
+.isdk-report-card *::before,
+.isdk-report-card *::after,
+.isdk-score-summary,
+.isdk-score-summary *,
+.isdk-score-summary *::before,
+.isdk-score-summary *::after,
+.isdk-transcript,
+.isdk-transcript *,
+.isdk-transcript *::before,
+.isdk-transcript *::after {
+  box-sizing: border-box;
 }
 
 .isdk-widget,
@@ -77,11 +152,44 @@
   box-shadow: var(--isdk-shadow);
 }
 
+/* QuestionCardBody remounts fresh on every prompt change (see
+   QuestionCard.tsx) so a new question or follow-up currently just snaps
+   into place — this plays once per mount, the same as any other entrance
+   animation, without needing to be re-triggered from JS. */
+.isdk-question-card {
+  animation: isdk-question-in 0.35s ease-out;
+}
+
+@keyframes isdk-question-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .isdk-report-card .isdk-score-summary {
   border: none;
   box-shadow: none;
   padding: 0;
   margin-bottom: 1.25rem;
+}
+
+/* ---------- visually hidden but reachable by assistive tech ---------- */
+
+.isdk-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---------- kicker: the small uppercase mono label used throughout ---------- */
@@ -107,16 +215,251 @@
   margin: 0 0 0.6rem;
 }
 
+/* ---------- turn-state topbar (voice-enabled questions only) ---------- */
+
+.isdk-question-card__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 0.6rem;
+}
+
+.isdk-question-card__topbar .isdk-question-card__meta {
+  margin: 0;
+}
+
+.isdk-question-card__turn-pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--isdk-font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--isdk-rule);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  color: var(--isdk-ink-soft);
+  white-space: nowrap;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.isdk-question-card__turn-pill--ai-speaking {
+  color: var(--isdk-accent-text);
+  border-color: var(--isdk-accent);
+}
+
+.isdk-question-card__turn-pill--candidate-turn {
+  color: var(--isdk-pass);
+  border-color: var(--isdk-pass);
+}
+
+.isdk-question-card__turn-pill--recording {
+  color: var(--isdk-flag);
+  border-color: var(--isdk-flag);
+}
+
+/* Small corner-badge treatment once the topbar sits over the call stage
+   below it, rather than a full-width bar above a form. */
+.isdk-question-card__topbar--overlay {
+  margin: 0 0 0.85rem;
+}
+
+.isdk-question-card__topbar--overlay .isdk-question-card__meta {
+  margin: 0;
+}
+
+/* ---------- call stage (AI presence + candidate self-view) ---------- */
+
+.isdk-question-card__stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  margin: 0 0 1.35rem;
+}
+
+.isdk-question-card__ai-tile,
+.isdk-question-card__candidate-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: clamp(200px, 28vh, 260px);
+  /* Extra bottom padding keeps the centered content (avatar/orb + status
+     word) clear of the absolutely-positioned corner label pill, which
+     otherwise overlaps it on narrower tiles. */
+  padding: 0.5rem 0.5rem 2rem;
+  border-radius: var(--isdk-radius-lg);
+  background: var(--isdk-neutral-bg);
+  border: 1px solid var(--isdk-rule);
+  transition: border-color 0.2s ease;
+  overflow: hidden;
+}
+
+/* Top-edge "who's live" strip — gold for the AI speaking, flag-red for the
+   candidate actually recording, matching the turn-pill's color language.
+   Colored only while active; otherwise fully transparent. */
+.isdk-question-card__ai-tile::before,
+.isdk-question-card__candidate-tile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.isdk-question-card__ai-tile.isdk-question-card__tile--active {
+  border-color: var(--isdk-accent);
+}
+
+.isdk-question-card__ai-tile.isdk-question-card__tile--active::before {
+  background: var(--isdk-accent);
+}
+
+.isdk-question-card__candidate-tile.isdk-question-card__tile--active {
+  border-color: var(--isdk-flag);
+}
+
+.isdk-question-card__candidate-tile.isdk-question-card__tile--active::before {
+  background: var(--isdk-flag);
+}
+
+.isdk-question-card__tile-status {
+  font-family: var(--isdk-font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--isdk-ink-soft);
+}
+
+.isdk-question-card__candidate-tile.isdk-question-card__tile--active .isdk-question-card__tile-status {
+  color: var(--isdk-flag-text);
+}
+
+.isdk-question-card__ai-tile.isdk-question-card__tile--active .isdk-question-card__tile-status {
+  color: var(--isdk-accent-text);
+}
+
+.isdk-question-card__tile-label {
+  position: absolute;
+  bottom: 0.55rem;
+  left: 0.55rem;
+  font-family: var(--isdk-font-mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--isdk-ink-soft);
+  background: color-mix(in srgb, var(--isdk-surface) 88%, transparent);
+  border: 1px solid var(--isdk-rule);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+}
+
+/* A real person's name reads as cold/system-y in an uppercase mono pill —
+   this is the one label spot where the warmer display face is right. */
+.isdk-question-card__tile-label--name {
+  font-family: var(--isdk-font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--isdk-ink);
+}
+
+.isdk-question-card__avatar {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--isdk-surface);
+  border: 1px solid var(--isdk-rule);
+  font-family: var(--isdk-font-display);
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: var(--isdk-ink-soft);
+}
+
+.isdk-question-card__ai-tile .isdk-question-audio {
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.isdk-question-card__ai-tile .isdk-question-audio__orb {
+  width: 96px;
+  height: 96px;
+}
+
+.isdk-question-card__ai-tile .isdk-audio-meter {
+  height: 34px;
+  gap: 4px;
+}
+
+.isdk-question-card__ai-tile .isdk-audio-meter span {
+  width: 4px;
+}
+
+.isdk-question-card__ai-tile .isdk-btn--audio {
+  font-size: 0.74rem;
+}
+
+.isdk-question-card__candidate-tile .isdk-audio-meter {
+  height: 28px;
+}
+
+/* ---------- caption-style prompt ---------- */
+
+.isdk-question-card__caption {
+  margin: 0 0 1rem;
+}
+
+.isdk-question-card__caption .isdk-question-card__prompt {
+  margin: 0;
+}
+
 /* ---------- headings ---------- */
 
-.isdk-question-card__prompt,
-.isdk-report-card__title,
-.isdk-score-summary__title {
+.isdk-question-card__prompt {
   font-family: var(--isdk-font-display);
   font-weight: 600;
   font-size: 1.3rem;
   letter-spacing: -0.01em;
   margin: 0 0 0.75rem;
+}
+
+/* The report's own title needs to read as the definitive heading of the
+   whole screen — bigger than a per-question prompt, not the same size as
+   one — with "Score Summary" right below it demoted to the same small
+   mono-kicker treatment every other report subsection ("Strengths", "Areas
+   for improvement") already uses, instead of competing with it as a second
+   full heading. */
+.isdk-report-card__title {
+  font-family: var(--isdk-font-display);
+  font-weight: 600;
+  font-size: 1.65rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.75rem;
+}
+
+.isdk-score-summary__title {
+  font-family: var(--isdk-font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--isdk-ink-soft);
+  margin: 0 0 0.9rem;
 }
 
 .isdk-report-card__head {
@@ -201,15 +544,25 @@
 
 .isdk-widget__error {
   background: var(--isdk-flag-bg);
-  border: 1px solid var(--isdk-flag);
-  color: var(--isdk-flag);
-  border-radius: var(--isdk-radius-sm);
-  padding: 0.9rem 1rem;
+  border-left: 3px solid var(--isdk-flag);
+  color: var(--isdk-ink);
+  border-radius: 0 var(--isdk-radius-sm) var(--isdk-radius-sm) 0;
+  padding: 0.85rem 1rem;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .isdk-widget__error p {
-  margin: 0 0 0.6rem;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.isdk-widget__error .isdk-btn {
+  flex-shrink: 0;
 }
 
 /* ---------- form ---------- */
@@ -226,7 +579,6 @@
 
 .isdk-question-card__textarea {
   width: 100%;
-  box-sizing: border-box;
   font: inherit;
   font-family: var(--isdk-font-body);
   color: inherit;
@@ -241,6 +593,188 @@
 .isdk-question-card__textarea:focus-visible {
   outline: 2px solid var(--isdk-accent);
   outline-offset: 1px;
+}
+
+/* Once voice is available, the mic becomes the primary control and the
+   textarea recedes visually — it's never disabled or hidden, just quieter. */
+.isdk-question-card__textarea--secondary {
+  min-height: 4.5rem;
+  font-size: 0.88rem;
+  color: var(--isdk-ink-soft);
+}
+
+.isdk-question-card__textarea--secondary:focus-visible {
+  color: var(--isdk-ink);
+}
+
+/* Text-only mode (no transcribe/synthesize): elevates the answer field into
+   a considered composer instead of a bare labeled textarea. */
+.isdk-question-card__composer {
+  border: 1px solid var(--isdk-rule);
+  border-radius: var(--isdk-radius-lg);
+  background: var(--isdk-paper);
+  padding: 1rem 1rem 0.25rem;
+  margin-bottom: 0.85rem;
+  transition: border-color 0.15s ease;
+}
+
+.isdk-question-card__composer:focus-within {
+  border-color: var(--isdk-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--isdk-accent) 25%, transparent);
+}
+
+.isdk-question-card__composer .isdk-question-card__label {
+  margin-bottom: 0.4rem;
+}
+
+.isdk-question-card__composer .isdk-question-card__textarea {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-bottom: 0.75rem;
+}
+
+/* The composer wrapper itself is the visual "input box" here (that's why
+   the textarea above has border: none) and already shows its own
+   focus-within ring — the textarea's own :focus-visible outline just
+   doubles up as a second ring nested inside the first. One indicator. */
+.isdk-question-card__composer .isdk-question-card__textarea:focus-visible {
+  outline: none;
+}
+
+/* A quieter version once the mic is the primary way to answer — still a
+   real, always-present composer, just visually receding behind the stage. */
+.isdk-question-card__composer--secondary {
+  padding: 0.7rem 0.85rem 0.1rem;
+  background: transparent;
+}
+
+.isdk-question-card__composer--secondary .isdk-question-card__label {
+  font-size: 0.66rem;
+}
+
+/* ---------- session row: elapsed timer + pause (every mode) ---------- */
+
+.isdk-question-card__session-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0 0 0.5rem;
+}
+
+.isdk-question-card__timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--isdk-font-mono);
+  font-size: 0.85rem;
+  color: var(--isdk-ink-soft);
+}
+
+.isdk-question-card__timer-bar {
+  display: block;
+  width: 8.5rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--isdk-neutral-bg);
+  overflow: hidden;
+}
+
+.isdk-question-card__timer-bar span {
+  display: block;
+  height: 100%;
+  background: var(--isdk-accent);
+  border-radius: 999px;
+  transition: width 1s linear;
+}
+
+.isdk-question-card__pause {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.85rem;
+}
+
+/* ---------- call toolbar: left (Speaker) / center (mic) / right (Hints, Skip, Submit) ---------- */
+
+.isdk-question-card__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding: 0.4rem 0 0.9rem;
+}
+
+.isdk-question-card__toolbar-zone {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.isdk-question-card__toolbar-zone--left {
+  flex: 1 1 0;
+}
+
+.isdk-question-card__toolbar-zone--center {
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.isdk-question-card__toolbar-zone--right {
+  flex: 1 1 0;
+  justify-content: flex-end;
+}
+
+/* Speaker / Hints / Skip: icon + visible label, same pill shape as any other secondary button */
+.isdk-btn--toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+}
+
+.isdk-btn--toolbar .isdk-btn__icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: inherit;
+}
+
+.isdk-btn--toolbar[aria-pressed='true'] {
+  border-color: var(--isdk-accent);
+  color: var(--isdk-accent-text);
+}
+
+/* The mic stays the one circular, icon-only, primary control in the row */
+.isdk-question-card__toolbar .isdk-mic {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.isdk-question-card__toolbar .isdk-btn--mic {
+  width: 3.4rem;
+  height: 3.4rem;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+}
+
+.isdk-question-card__toolbar .isdk-btn--mic .isdk-btn__icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.isdk-question-card__toolbar .isdk-btn--mic .isdk-btn__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .isdk-question-card__actions {
@@ -295,8 +829,18 @@
   border-color: var(--isdk-accent);
 }
 
+.isdk-btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
 .isdk-btn--secondary:hover:not(:disabled) {
-  color: var(--isdk-accent);
+  color: var(--isdk-accent-text);
+  background: color-mix(in srgb, var(--isdk-accent) 8%, var(--isdk-surface));
+  transform: translateY(-1px);
+}
+
+.isdk-btn--secondary:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .isdk-btn--mic {
@@ -305,13 +849,13 @@
   gap: 0.55rem;
 }
 
-.isdk-btn--mic::before {
-  content: '';
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
-  background: var(--isdk-ink-soft);
+.isdk-btn__icon {
+  width: 1rem;
+  height: 1rem;
   flex-shrink: 0;
+  border-radius: 50%;
+  color: var(--isdk-ink-soft);
+  transition: color 0.2s ease;
 }
 
 .isdk-btn--mic[aria-pressed='true'] {
@@ -319,23 +863,73 @@
   color: var(--isdk-flag);
 }
 
-.isdk-btn--mic[aria-pressed='true']::before {
-  background: var(--isdk-flag);
+.isdk-btn--mic[aria-pressed='true'] .isdk-btn__icon {
+  color: var(--isdk-flag);
   animation: isdk-pulse 1.4s ease-in-out infinite;
+}
+
+/* Promoted to the primary, inviting action once it's genuinely the
+   candidate's turn (never combined with [aria-pressed='true'] — a control
+   is either being invited or already recording, never both). */
+.isdk-btn--mic-invite {
+  border-color: var(--isdk-accent);
+  color: var(--isdk-accent-text);
+  background: color-mix(in srgb, var(--isdk-accent) 10%, var(--isdk-surface));
+  box-shadow: var(--isdk-shadow);
+  font-size: 0.95rem;
+  padding: 0.7rem 1.3rem;
+}
+
+.isdk-btn--mic-invite .isdk-btn__icon {
+  color: var(--isdk-accent);
+  animation: isdk-pulse 1.8s ease-in-out infinite;
 }
 
 @keyframes isdk-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--isdk-flag) 45%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent);
   }
   50% {
     box-shadow: 0 0 0 4px transparent;
   }
 }
 
+/* ---------- mic control + live level meter ---------- */
+
+.isdk-mic {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
 .isdk-question-audio {
-  margin: 0 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 0 0 1.1rem;
+}
+
+.isdk-question-audio__orb {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--isdk-surface);
+  border: 1px solid var(--isdk-rule);
+  box-shadow: var(--isdk-shadow);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.isdk-question-audio__orb--active {
+  border-color: var(--isdk-accent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--isdk-accent) 18%, transparent),
+    var(--isdk-shadow);
 }
 
 .isdk-btn--audio {
@@ -344,6 +938,66 @@
   gap: 0.5rem;
   font-size: 0.8rem;
   padding: 0.4rem 0.8rem;
+}
+
+/* ---------- shared amplitude meter (AI-speaking orb + candidate mic) ---------- */
+
+.isdk-audio-meter {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+}
+
+.isdk-audio-meter span {
+  width: 3px;
+  min-height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  transform: scaleY(var(--isdk-meter-level, 0.08));
+  transform-origin: bottom;
+  transition: transform 90ms ease-out;
+}
+
+.isdk-audio-meter--speaking {
+  color: var(--isdk-accent);
+}
+
+.isdk-audio-meter--listening {
+  color: var(--isdk-flag);
+}
+
+.isdk-audio-meter--idle span {
+  animation: isdk-meter-idle 1.6s ease-in-out infinite;
+  transition: none;
+}
+
+.isdk-audio-meter--idle span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.isdk-audio-meter--idle span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.isdk-audio-meter--idle span:nth-child(4) {
+  animation-delay: 360ms;
+}
+
+.isdk-audio-meter--idle span:nth-child(5) {
+  animation-delay: 480ms;
+}
+
+@keyframes isdk-meter-idle {
+  0%,
+  100% {
+    transform: scaleY(0.2);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scaleY(0.7);
+    opacity: 1;
+  }
 }
 
 .isdk-btn--audio::before {
@@ -357,18 +1011,532 @@
 
 /* ---------- widget shell ---------- */
 
+/* The browser's default 8px body margin otherwise leaves a sliver of the
+   page's own background showing around every edge of a full-viewport
+   widget — scoped with :has() so this only kicks in on pages that actually
+   render the widget, never a blanket reset for unrelated host pages that
+   merely import this stylesheet. */
+body:has(.isdk-widget) {
+  margin: 0;
+}
+
 .isdk-widget {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  /* A hard height, not just a floor: height: 100% would silently collapse
+     to zero unless the consuming app happens to give html/body/#root an
+     explicit height all the way down (an easy-to-miss setup step), and
+     min-height alone lets a long transcript/question list grow the whole
+     *page* taller than the viewport instead of scrolling inside its own
+     panel — the in-progress sidebar's overflow-y: auto (and the
+     transcript's own) only has a real height budget to scroll within if
+     this container itself is capped, not just floored. A vh fallback (dvh
+     overrides it in browsers that support it, ignored otherwise) is what
+     makes this look right out of the box. Still fully overridable via the
+     className/style props if you want the widget embedded in a smaller,
+     non-full-page container instead. */
+  height: 100vh;
+  height: 100dvh;
+  /* A capped height needs somewhere for genuinely overlong content to go —
+     a long report (lots of strengths/weaknesses/missed concepts, a long
+     transcript) should scroll the whole widget rather than get clipped at
+     the viewport edge. The in-progress sidebar/transcript below scroll
+     independently within this for the same reason. */
+  overflow-y: auto;
+  padding: 1.5rem;
+  background-color: var(--isdk-paper);
+  background-image: var(--isdk-grid-texture);
+  background-position: center top;
 }
 
-.isdk-widget--start {
-  display: block;
+/* Lobby / paused / report: an intentional centered moment on the full
+   canvas instead of a small card pinned to the top-left. A soft radial
+   glow grounds the card as the room's focal point, so the open canvas
+   around it reads as ambient space rather than leftover emptiness. */
+.isdk-widget--center {
+  align-items: center;
+  justify-content: center;
+  /* A long report is regularly taller than the viewport. Plain `center`
+     on an overflowing flex container centers the content around its own
+     midpoint even when that midpoint falls outside the scrollable area —
+     the classic "flexbox centering + overflow" trap, where the very top
+     (or bottom) of the content becomes unreachable by scrolling at all,
+     only fixable by zooming out to shrink the content below the
+     viewport's height. `safe` falls back to start-alignment exactly when
+     content overflows, keeping every full-size case centered as before
+     while guaranteeing an overflowing one stays fully reachable by
+     scroll. Declared after the plain values as a progressive enhancement
+     — browsers without `safe` support just keep plain centering. */
+  align-items: safe center;
+  justify-content: safe center;
+  background-image:
+    radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--isdk-accent) 9%, transparent) 0%,
+      transparent 60%
+    ),
+    var(--isdk-grid-texture);
 }
 
-.isdk-widget__pause {
+.isdk-widget__hero {
+  width: 100%;
+  max-width: 680px;
+}
+
+.isdk-widget__paused {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Same grounding glow as the other centered "moment" screens — the grid
+     texture itself already shows through from .isdk-widget underneath. */
+  background-image: radial-gradient(
+    circle at center,
+    color-mix(in srgb, var(--isdk-accent) 9%, transparent) 0%,
+    transparent 60%
+  );
+}
+
+.isdk-widget__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--isdk-rule);
+}
+
+.isdk-widget__role-title {
+  font-family: var(--isdk-font-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin: 0;
+  color: var(--isdk-ink);
+}
+
+.isdk-widget__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.isdk-widget__rec-badge {
+  font-family: var(--isdk-font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--isdk-flag);
+  background: var(--isdk-flag-bg);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  animation: isdk-rec-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes isdk-rec-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.isdk-widget__end {
+  font-size: 0.82rem;
+  color: var(--isdk-flag);
+  border-color: color-mix(in srgb, var(--isdk-flag) 45%, var(--isdk-rule));
+}
+
+.isdk-widget__end:hover:not(:disabled) {
+  border-color: var(--isdk-flag);
+}
+
+.isdk-widget__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.4fr);
+  /* Without this, the implicit row is auto-sized (fits content) even though
+     align-items: stretch is set — stretch only fills a row that's already
+     tall, it doesn't make the row tall itself. That left the sidebar's own
+     height: 100% resolving against a content-sized row instead of the real
+     available space, so its transcript's flex:1/overflow-y:auto never had
+     a real height budget to scroll within — long transcripts just grew the
+     whole page instead of scrolling inside the sidebar. */
+  grid-template-rows: minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+}
+
+.isdk-widget__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  height: 100%;
+  min-height: 0;
+  /* Safety net: the transcript scrolls internally on its own (flex:1 +
+     overflow-y: auto), but a question list long enough to outgrow the
+     sidebar on its own would still spill past this box without this —
+     scrolls the whole sidebar in that edge case rather than the page. */
+  overflow-y: auto;
+  background: var(--isdk-surface);
+  border: 1px solid var(--isdk-rule);
+  border-radius: var(--isdk-radius);
+  box-shadow: var(--isdk-shadow);
+  padding: 1.35rem;
+}
+
+.isdk-widget__stage-wrap {
+  display: flex;
+  flex-direction: column;
+  /* flex-start, not center: the sidebar beside it is always top-aligned, so
+     centering this column would leave the two columns starting at visibly
+     different heights — reads as a layout bug, not a considered design,
+     especially now .isdk-widget has real height (see below) for this to
+     actually have visible room to center within. */
+  justify-content: flex-start;
+  gap: 0.5rem;
+  height: 100%;
+  min-height: 0;
+  /* Without this, a question card taller than its row (a long prompt, an
+     expanded hint) has nowhere to go but out — spilling past .isdk-widget's
+     own bottom edge and triggering ITS overflow-y: auto instead, which
+     scrolls the header and End Interview button away too. Scrolling inside
+     this column instead keeps the header, question, and controls fixed in
+     place exactly like the sidebar already does on its side. */
+  overflow-y: auto;
+}
+
+/* ---------- interview progress checklist ---------- */
+
+.isdk-progress__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.isdk-progress__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.isdk-progress__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 0.15rem;
+  border-radius: 50%;
+  border: 1px solid var(--isdk-rule);
+  color: var(--isdk-pass);
+}
+
+.isdk-progress__icon svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.isdk-progress__item--done .isdk-progress__icon {
+  border-color: var(--isdk-pass);
+}
+
+.isdk-progress__item--active .isdk-progress__icon {
+  border-color: var(--isdk-accent);
+}
+
+.isdk-progress__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--isdk-accent);
+  animation: isdk-rec-pulse 1.6s ease-in-out infinite;
+}
+
+.isdk-progress__item--upcoming {
+  opacity: 0.55;
+}
+
+.isdk-progress__body {
+  min-width: 0;
+}
+
+.isdk-progress__topic {
+  margin: 0 0 0.15rem;
+  font-family: var(--isdk-font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--isdk-accent-text);
+}
+
+.isdk-progress__prompt {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: var(--isdk-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.isdk-progress__item--upcoming .isdk-progress__prompt {
+  color: var(--isdk-ink-soft);
+}
+
+/* ---------- AI feedback note (chat-style) ---------- */
+
+.isdk-feedback-note {
+  border: 1px solid var(--isdk-rule);
+  border-radius: var(--isdk-radius);
+  background: var(--isdk-paper);
+  padding: 0.85rem 0.95rem;
+}
+
+.isdk-feedback-note__label {
+  margin: 0 0 0.3rem;
+  font-family: var(--isdk-font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--isdk-accent-text);
+}
+
+.isdk-feedback-note__text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--isdk-ink);
+}
+
+/* ---------- transcript chat (running AI/candidate conversation) ---------- */
+
+.isdk-transcript-chat {
+  list-style: none;
+  margin: 0;
+  padding: 0.9rem 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  border-top: 1px solid var(--isdk-rule);
+  border-bottom: 1px solid var(--isdk-rule);
+}
+
+/* Keyboard-focusable so a keyboard-only user can actually scroll this
+   region once the conversation grows past its visible height — without
+   this, the earlier part of the transcript is otherwise unreachable. */
+.isdk-transcript-chat:focus-visible {
+  outline: 2px solid var(--isdk-accent);
+  outline-offset: -2px;
+}
+
+.isdk-transcript-chat__empty {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--isdk-ink-soft);
+}
+
+.isdk-transcript-chat__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.isdk-transcript-chat__bubble {
+  max-width: 92%;
+  border-radius: var(--isdk-radius);
+  padding: 0.55rem 0.75rem;
+}
+
+.isdk-transcript-chat__bubble--ai {
   align-self: flex-start;
-  margin: 0.75rem 0;
+  background: var(--isdk-paper);
+  border: 1px solid var(--isdk-rule);
+}
+
+.isdk-transcript-chat__bubble--you {
+  align-self: flex-end;
+  background: var(--isdk-pass-bg);
+  border: 1px solid color-mix(in srgb, var(--isdk-pass) 25%, transparent);
+}
+
+.isdk-transcript-chat__bubble--note {
+  align-self: flex-start;
+  max-width: 84%;
+  background: color-mix(in srgb, var(--isdk-accent) 6%, var(--isdk-paper));
+  border: 1px solid transparent;
+  border-left: 2px solid var(--isdk-accent);
+  border-radius: 0 var(--isdk-radius) var(--isdk-radius) 0;
+  padding-left: 0.65rem;
+}
+
+.isdk-transcript-chat__from {
+  margin: 0 0 0.2rem;
+  font-family: var(--isdk-font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--isdk-ink-soft);
+}
+
+.isdk-transcript-chat__bubble--ai .isdk-transcript-chat__from {
+  color: var(--isdk-accent-text);
+}
+
+.isdk-transcript-chat__bubble--you .isdk-transcript-chat__from {
+  color: var(--isdk-pass);
+}
+
+.isdk-transcript-chat__from--note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--isdk-ink-soft);
+}
+
+.isdk-transcript-chat__note-icon {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--isdk-accent);
+  flex-shrink: 0;
+}
+
+.isdk-transcript-chat__text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--isdk-ink);
+}
+
+.isdk-transcript-chat__bubble--note .isdk-transcript-chat__text {
+  color: var(--isdk-ink-soft);
+  font-style: italic;
+}
+
+/* ---------- live signals ---------- */
+
+.isdk-live-signals__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.isdk-live-signals__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'label score' 'bar bar';
+  align-items: center;
+  row-gap: 0.3rem;
+  column-gap: 0.5rem;
+}
+
+.isdk-live-signals__label {
+  grid-area: label;
+  font-size: 0.82rem;
+  color: var(--isdk-ink-soft);
+}
+
+.isdk-live-signals__score {
+  grid-area: score;
+  font-family: var(--isdk-font-mono);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--isdk-ink);
+}
+
+.isdk-live-signals__bar {
+  grid-area: bar;
+  display: block;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--isdk-neutral-bg);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--isdk-ink) 12%, transparent);
+  overflow: hidden;
+}
+
+.isdk-live-signals__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--isdk-pass) 78%, transparent),
+    var(--isdk-pass)
+  );
+  transition: width 0.4s ease;
+}
+
+/* ---------- pre-join lobby ---------- */
+
+.isdk-lobby {
+  background: var(--isdk-surface);
+  border: 1px solid var(--isdk-rule);
+  border-radius: var(--isdk-radius);
+  box-shadow: var(--isdk-shadow);
+  padding: var(--isdk-spacing);
+  color: var(--isdk-ink);
+  font-family: var(--isdk-font-body);
+}
+
+.isdk-lobby__title {
+  font-family: var(--isdk-font-display);
+  font-weight: 600;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.5rem;
+}
+
+.isdk-lobby__meta {
+  color: var(--isdk-ink-soft);
+  font-size: 0.92rem;
+  margin: 0 0 1.25rem;
+}
+
+.isdk-lobby__mic-check {
+  margin: 0 0 1.25rem;
+}
+
+.isdk-lobby__mic-active {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  color: var(--isdk-ink-soft);
+  font-size: 0.88rem;
+}
+
+.isdk-lobby__hint {
+  background: color-mix(in srgb, var(--isdk-accent) 8%, var(--isdk-surface));
+  border: 1px solid var(--isdk-rule);
+  border-left: 3px solid var(--isdk-accent);
+  color: var(--isdk-ink-soft);
+  border-radius: var(--isdk-radius-sm);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.88rem;
+  margin: 0.75rem 0 0;
+}
+
+.isdk-lobby__actions {
+  display: flex;
+  gap: 0.6rem;
 }
 
 /* ---------- transcript ---------- */
@@ -393,17 +1561,47 @@
   padding-top: 0;
 }
 
+/* A follow-up belongs to the question right above it, not a new peer
+   entry in the list — without this, a long transcript with several
+   rounds of follow-ups reads as one undifferentiated flat list. An
+   indent plus a quiet left accent (the same grouping language the
+   transcript chat's own feedback bubble already uses) keeps that
+   relationship readable regardless of how many rounds there are. */
+.isdk-transcript__entry--followup {
+  margin-left: 1.25rem;
+  padding-left: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: none;
+  border-left: 2px solid var(--isdk-rule);
+}
+
+.isdk-transcript__entry-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 0.35rem;
+}
+
 .isdk-transcript__prompt {
   margin: 0 0 0.35rem;
 }
 
 .isdk-transcript__answer {
   color: var(--isdk-ink-soft);
-  margin: 0 0 0.5rem;
+  margin: 0;
 }
 
 .isdk-transcript__score {
+  flex-shrink: 0;
+}
+
+.isdk-transcript__empty {
   margin: 0;
+  padding: 0.9rem 0 0;
+  border-top: 1px solid var(--isdk-rule);
+  color: var(--isdk-ink-soft);
+  font-size: 0.92rem;
 }
 
 @keyframes isdk-rise-in {
@@ -443,6 +1641,15 @@
   margin-bottom: 1.25rem;
 }
 
+.isdk-report-card__export-notice {
+  margin: 1.25rem 0 0;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.86rem;
+  color: var(--isdk-flag);
+  background: var(--isdk-flag-bg);
+  border-radius: var(--isdk-radius-sm);
+}
+
 .isdk-report-card__actions {
   display: flex;
   flex-wrap: wrap;
@@ -454,16 +1661,72 @@
 
 /* ---------- motion preference ---------- */
 
+@media (max-width: 48rem) {
+  .isdk-widget__body {
+    grid-template-columns: 1fr;
+    /* Stacked single-column layout: stage and sidebar become two rows
+       instead of two side-by-side columns, but the same principle as the
+       desktop layout still applies — one track sizes to its own natural
+       content and is never compressed or stretched, the other is capped
+       to whatever height remains and scrolls internally instead of the
+       page. Row 1 (the question) is auto, so it always renders in full
+       and never needs its own scrollbar; row 2 (the sidebar) is the
+       flexible track, so it absorbs any overflow. min-height stays 0
+       (the desktop default, not overridden here) specifically so this
+       grid is capped to the space actually available rather than
+       growing past the viewport — that's what gives row 2 a real,
+       bounded height to scroll within. */
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .isdk-widget__stage-wrap {
+    height: auto;
+  }
+
+  .isdk-widget__sidebar {
+    height: 100%;
+  }
+}
+
+@media (max-width: 30rem) {
+  .isdk-question-card__stage {
+    grid-template-columns: 1fr;
+  }
+
+  .isdk-question-card__ai-tile,
+  .isdk-question-card__candidate-tile {
+    height: 160px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .isdk-transcript__entry {
     animation: none;
     opacity: 1;
     transform: none;
   }
-  .isdk-btn--mic[aria-pressed='true']::before {
+  .isdk-btn--mic[aria-pressed='true'] .isdk-btn__icon {
+    animation: none;
+  }
+  .isdk-btn--mic-invite .isdk-btn__icon {
+    animation: none;
+  }
+  .isdk-audio-meter--idle span {
+    animation: none;
+  }
+  .isdk-widget__rec-badge {
+    animation: none;
+  }
+  .isdk-progress__dot {
     animation: none;
   }
   .isdk-btn--primary:hover:not(:disabled) {
     transform: none;
+  }
+  .isdk-btn--secondary:hover:not(:disabled) {
+    transform: none;
+  }
+  .isdk-question-card {
+    animation: none;
   }
 }

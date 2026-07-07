@@ -13,8 +13,14 @@ export interface ElevenLabsAdapterConfig {
   apiKey?: string;
   /** Voice to use for synthesis. Defaults to ElevenLabs' pre-built "Rachel" voice. */
   voiceId?: string;
-  /** Text-to-speech model. Defaults to `eleven_multilingual_v2`. */
-  model?: string;
+  /**
+   * Text-to-speech (synthesis) model. Defaults to `eleven_multilingual_v2`.
+   * Named to mirror `@interview-sdk/adapter-deepgram`'s `speakModel` — on
+   * that adapter, `model` means STT instead, so this package deliberately
+   * never has a bare `model` option to avoid the same name meaning opposite
+   * things depending on which voice adapter you're configuring.
+   */
+  speakModel?: string;
   /** Speech-to-text model. Defaults to `scribe_v2`. */
   transcribeModel?: 'scribe_v1' | 'scribe_v2';
   /** Inject a pre-configured client (e.g. for testing). */
@@ -48,13 +54,13 @@ export class ElevenLabsAdapter implements VoiceProviderAdapter {
   readonly id = 'elevenlabs';
   private readonly client: ElevenLabsClient;
   private readonly voiceId: string;
-  private readonly model: string;
+  private readonly speakModel: string;
   private readonly transcribeModel: 'scribe_v1' | 'scribe_v2';
 
   constructor(config: ElevenLabsAdapterConfig = {}) {
     this.client = config.client ?? new ElevenLabsClient({ apiKey: config.apiKey });
     this.voiceId = config.voiceId ?? DEFAULT_VOICE_ID;
-    this.model = config.model ?? DEFAULT_TTS_MODEL;
+    this.speakModel = config.speakModel ?? DEFAULT_TTS_MODEL;
     this.transcribeModel = config.transcribeModel ?? DEFAULT_STT_MODEL;
   }
 
@@ -62,7 +68,7 @@ export class ElevenLabsAdapter implements VoiceProviderAdapter {
     try {
       const stream = await this.client.textToSpeech.convert(this.voiceId, {
         text,
-        modelId: this.model,
+        modelId: this.speakModel,
         outputFormat: 'mp3_44100_128',
       });
 

@@ -63,6 +63,32 @@ describe('FollowUpEngine.decide', () => {
     expect(decision).toEqual({ shouldGenerate: false, reason: 'max_depth_reached' });
   });
 
+  it("a question's own maxFollowUps overrides the engine's configured maxDepth", () => {
+    const engine = new FollowUpEngine({ maxDepth: 2 });
+    const questionWithOverride: Question = { ...question, maxFollowUps: 0 };
+
+    const decision = engine.decide(
+      baseContext({ question: questionWithOverride, currentDepth: 0 }),
+    );
+
+    expect(decision).toEqual({ shouldGenerate: false, reason: 'max_depth_reached' });
+  });
+
+  it('a higher per-question maxFollowUps allows going past the engine-wide default', () => {
+    const engine = new FollowUpEngine({ maxDepth: 1 });
+    const questionWithOverride: Question = { ...question, maxFollowUps: 3 };
+
+    const decision = engine.decide(
+      baseContext({
+        question: questionWithOverride,
+        currentDepth: 2,
+        evaluation: evaluation({ conceptCoverage: [{ concept: 'hashing', covered: false }] }),
+      }),
+    );
+
+    expect(decision.shouldGenerate).toBe(true);
+  });
+
   it('stops when the candidate did not answer', () => {
     const engine = new FollowUpEngine();
     const decision = engine.decide(
@@ -74,6 +100,14 @@ describe('FollowUpEngine.decide', () => {
   it('stops when the candidate skipped the question', () => {
     const engine = new FollowUpEngine();
     const decision = engine.decide(baseContext({ evaluation: evaluation({ flags: ['skipped'] }) }));
+    expect(decision.shouldGenerate).toBe(false);
+  });
+
+  it('stops when the candidate explicitly said they don\'t know, rather than probing the same dead end again', () => {
+    const engine = new FollowUpEngine();
+    const decision = engine.decide(
+      baseContext({ evaluation: evaluation({ flags: ['i_dont_know'] }) }),
+    );
     expect(decision.shouldGenerate).toBe(false);
   });
 

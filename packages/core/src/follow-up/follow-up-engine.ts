@@ -54,13 +54,20 @@ export class FollowUpEngine {
     if (context.timedOut) {
       return { shouldGenerate: false, reason: 'timed_out' };
     }
-    if (context.currentDepth >= this.maxDepth) {
+    const maxDepth = context.question.maxFollowUps ?? this.maxDepth;
+    if (context.currentDepth >= maxDepth) {
       return { shouldGenerate: false, reason: 'max_depth_reached' };
     }
     if (
       context.evaluation.flags.includes('no_answer') ||
-      context.evaluation.flags.includes('skipped')
+      context.evaluation.flags.includes('skipped') ||
+      context.evaluation.flags.includes('i_dont_know')
     ) {
+      // An explicit "I don't know" is a real, present response — unlike
+      // no_answer/skipped it isn't silence — but probing the same missed
+      // concept again after the candidate already said they don't know it
+      // isn't a follow-up worth asking; better to move on to the next
+      // question than repeat the same dead end.
       return { shouldGenerate: false, reason: 'no_answer_to_follow_up_on' };
     }
 

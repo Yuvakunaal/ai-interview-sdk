@@ -1,9 +1,72 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { QuestionCard } from './QuestionCard.js';
 
 describe('QuestionCard', () => {
+  it('announces new questions/follow-ups via a live region that updates in place, not the remounted heading', () => {
+    const { rerender, container } = render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={3}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    const announcer = container.querySelector('[aria-live="polite"]');
+    expect(announcer).not.toBeNull();
+    expect(announcer).toHaveTextContent('Question 1 of 3: Explain hash maps.');
+    // The visible heading itself must not carry aria-live — the whole body
+    // it lives in remounts per prompt (a brand-new node with aria-live
+    // already on it is not reliably announced), so it would be inert.
+    expect(screen.getByRole('heading', { name: 'Explain hash maps.' })).not.toHaveAttribute(
+      'aria-live',
+    );
+
+    rerender(
+      <QuestionCard
+        prompt="Can you elaborate on collisions?"
+        questionNumber={1}
+        totalQuestions={3}
+        isFollowUp
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    // Same node, updated text — this is what makes assistive tech announce it.
+    expect(container.querySelector('[aria-live="polite"]')).toBe(announcer);
+    expect(announcer).toHaveTextContent('Follow-up: Can you elaborate on collisions?');
+  });
+
+  it('moves focus to the heading once when the interview view first appears, but not again on later questions', () => {
+    const { rerender } = render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={3}
+        onSubmit={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'Explain hash maps.' })).toHaveFocus();
+
+    // Candidate manually moves focus elsewhere (e.g. into the answer field)...
+    screen.getByLabelText('Your answer').focus();
+    expect(screen.getByLabelText('Your answer')).toHaveFocus();
+
+    // ...and a new question arrives. The new heading must not steal focus —
+    // only the live region (covered by the test above) should announce it.
+    rerender(
+      <QuestionCard
+        prompt="Explain binary search."
+        questionNumber={2}
+        totalQuestions={3}
+        onSubmit={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'Explain binary search.' })).not.toHaveFocus();
+  });
+
   it('renders the question number, prompt, and answer field', () => {
     render(
       <QuestionCard
@@ -221,5 +284,312 @@ describe('QuestionCard', () => {
 
     playSpy.mockRestore();
     vi.unstubAllGlobals();
+  });
+
+  it('gates the mic button while the AI is speaking, then enables it once playback ends', async () => {
+    const playSpy = vi
+      .spyOn(window.HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined);
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:fake-url'),
+      revokeObjectURL: vi.fn(),
+    });
+    const synthesize = vi.fn(async () => ({ audio: new ArrayBuffer(4), mimeType: 'audio/mpeg' }));
+    const transcribe = vi.fn(async () => 'an answer');
+
+    const { container } = render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        synthesize={synthesize}
+        transcribe={transcribe}
+        createRecorder={vi.fn(async () => ({ stop: vi.fn(async () => new Blob(['audio'])) }))}
+      />,
+    );
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('button', { name: 'Record answer' })).toBeDisabled();
+    expect(screen.getByText('AI is asking…')).toBeInTheDocument();
+
+    fireEvent(container.querySelector('audio')!, new Event('play'));
+    fireEvent(container.querySelector('audio')!, new Event('ended'));
+
+    expect(screen.getByRole('button', { name: 'Record answer' })).toBeEnabled();
+    expect(screen.getByText('Your turn')).toBeInTheDocument();
+
+    playSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('releases the mic gate if question audio fails, instead of deadlocking the candidate', async () => {
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:fake-url'),
+      revokeObjectURL: vi.fn(),
+    });
+    const synthesize = vi.fn(async () => {
+      throw new Error('voice provider is overloaded');
+    });
+    const transcribe = vi.fn(async () => 'an answer');
+    const onVoiceError = vi.fn();
+
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        synthesize={synthesize}
+        transcribe={transcribe}
+        onVoiceError={onVoiceError}
+        createRecorder={vi.fn(async () => ({ stop: vi.fn(async () => new Blob(['audio'])) }))}
+      />,
+    );
+
+    await waitFor(() => expect(onVoiceError).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('button', { name: 'Record answer' })).toBeEnabled();
+    expect(screen.getByText('Your turn')).toBeInTheDocument();
+
+    vi.unstubAllGlobals();
+  });
+
+  it('shows a recording pill while the mic is active', async () => {
+    const user = userEvent.setup();
+    const transcribe = vi.fn(async () => 'an answer');
+
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        transcribe={transcribe}
+        createRecorder={vi.fn(async () => ({ stop: vi.fn(async () => new Blob(['audio'])) }))}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Record answer' }));
+    await waitFor(() => expect(screen.getByText('● Recording')).toBeInTheDocument());
+  });
+
+  it('never disables the textarea because of voice turn-state — only isSubmitting/disabled gate it', async () => {
+    const playSpy = vi
+      .spyOn(window.HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined);
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:fake-url'),
+      revokeObjectURL: vi.fn(),
+    });
+    const synthesize = vi.fn(async () => ({ audio: new ArrayBuffer(4), mimeType: 'audio/mpeg' }));
+
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        synthesize={synthesize}
+      />,
+    );
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    // Still 'ai_speaking' at this point (no play/ended event fired) — the
+    // textarea must remain fully usable regardless.
+    expect(screen.getByLabelText('Your answer')).toBeEnabled();
+
+    playSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('does not render a turn pill in fully text-only mode (no synthesize or transcribe)', () => {
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText('Your turn')).not.toBeInTheDocument();
+    expect(screen.queryByText('AI is asking…')).not.toBeInTheDocument();
+  });
+
+  it('shows a Muted badge on the candidate tile whenever the mic is not actively recording', () => {
+    const transcribe = vi.fn(async () => 'an answer');
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        transcribe={transcribe}
+        createRecorder={vi.fn(async () => ({ stop: vi.fn(async () => new Blob(['audio'])) }))}
+      />,
+    );
+    expect(screen.getByText('Muted')).toBeInTheDocument();
+  });
+
+  it('hides the Muted badge while actually recording', async () => {
+    const user = userEvent.setup();
+    const transcribe = vi.fn(async () => 'an answer');
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        transcribe={transcribe}
+        createRecorder={vi.fn(async () => ({ stop: vi.fn(async () => new Blob(['audio'])) }))}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Record answer' }));
+    await waitFor(() => expect(screen.queryByText('Muted')).not.toBeInTheDocument());
+  });
+
+  it('shows the candidate name and its initial on the candidate tile', () => {
+    const transcribe = vi.fn(async () => 'an answer');
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        transcribe={transcribe}
+        candidateName="Alex Chen"
+      />,
+    );
+    expect(screen.getByText('Alex Chen')).toBeInTheDocument();
+    expect(screen.getByText('A')).toBeInTheDocument();
+  });
+
+  it('defaults the candidate name to "You" when not provided', () => {
+    const transcribe = vi.fn(async () => 'an answer');
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        transcribe={transcribe}
+      />,
+    );
+    expect(screen.getByText('You')).toBeInTheDocument();
+  });
+
+  it('shows the topic tag in the question meta when provided', () => {
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={3}
+        onSubmit={vi.fn()}
+        topic="Concurrency"
+      />,
+    );
+    expect(screen.getByText('Question 1 of 3 — Concurrency')).toBeInTheDocument();
+  });
+
+  it('toggles the Speaker control to mute/unmute the AI audio', async () => {
+    const user = userEvent.setup();
+    const playSpy = vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:fake-url'),
+      revokeObjectURL: vi.fn(),
+    });
+    const synthesize = vi.fn(async () => ({ audio: new ArrayBuffer(4), mimeType: 'audio/mpeg' }));
+
+    const { container } = render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        synthesize={synthesize}
+      />,
+    );
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    const speakerButton = screen.getByRole('button', { name: 'Speaker' });
+    expect(container.querySelector('audio')).toHaveProperty('muted', false);
+
+    await user.click(speakerButton);
+    expect(speakerButton).toHaveAttribute('aria-pressed', 'true');
+    expect(container.querySelector('audio')).toHaveProperty('muted', true);
+
+    playSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('renders Pause as a plain button so it never submits the in-progress answer', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    const onPause = vi.fn();
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={onSubmit}
+        onPause={onPause}
+        elapsedLabel="0:42"
+      />,
+    );
+
+    await user.type(screen.getByLabelText('Your answer'), 'Partial answer in progress');
+    await user.click(screen.getByRole('button', { name: 'Pause' }));
+
+    expect(onPause).toHaveBeenCalledTimes(1);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Your answer')).toHaveValue('Partial answer in progress');
+  });
+
+  it('disables Pause when pauseDisabled is set', () => {
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        onPause={vi.fn()}
+        pauseDisabled
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeDisabled();
+  });
+
+  it('does not render a timer or Pause button when neither is provided', () => {
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
+  });
+
+  it('labels the toolbar hint/skip controls "Hints"/"Skip" (not the text-only labels) once voice is enabled', () => {
+    const transcribe = vi.fn(async () => 'an answer');
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        onRequestHint={vi.fn()}
+        onSkip={vi.fn()}
+        transcribe={transcribe}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Hints' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Skip' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Request a hint' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Skip question' })).not.toBeInTheDocument();
   });
 });

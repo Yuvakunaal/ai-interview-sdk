@@ -55,7 +55,7 @@ describe('DeepgramAdapter', () => {
       }));
       const adapter = new DeepgramAdapter({
         client: fakeClient({ transcribeFile }),
-        model: 'nova-2',
+        transcribeModel: 'nova-2',
       });
 
       await adapter.transcribe(audio);

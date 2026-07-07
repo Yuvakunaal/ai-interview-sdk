@@ -1,5 +1,5 @@
 import type { Rubric } from '@interview-sdk/core';
-import { useCallback, useId } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { InterviewReport } from '../hooks/build-report.js';
 import { ScoreSummary } from './ScoreSummary.js';
 import { TranscriptViewer } from './TranscriptViewer.js';
@@ -13,8 +13,26 @@ export interface ReportCardProps {
   onExportError?: (error: Error, format: 'pdf' | 'csv') => void;
 }
 
+const FALLBACK_MESSAGE: Record<'pdf' | 'csv', string> = {
+  pdf: "PDF export isn't available here — downloaded a JSON file instead.",
+  csv: "CSV export failed — downloaded a JSON file instead.",
+};
+
 export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
   const headingId = useId();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  // This component mounts fresh exactly once, the moment the interview
+  // completes — moving focus here (rather than leaving it on whatever
+  // button was last clicked, or dropped to <body>) is what actually tells a
+  // screen-reader or keyboard user the report has arrived.
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+  // Surfaces the same fallback the catch blocks below already handle
+  // silently at the data layer — so a candidate who clicks "Export PDF"
+  // and gets a JSON file actually finds out why, instead of a mislabeled
+  // download with no explanation.
+  const [fallback, setFallback] = useState<'pdf' | 'csv' | null>(null);
 
   const exportJson = useCallback(() => {
     downloadBlob(
@@ -24,6 +42,7 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
   }, [report]);
 
   const exportCsv = useCallback(() => {
+    setFallback(null);
     try {
       const csv = transcriptToCsv(report.transcript);
       downloadBlob(
@@ -32,11 +51,13 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
       );
     } catch (error) {
       onExportError?.(error instanceof Error ? error : new Error(String(error)), 'csv');
+      setFallback('csv');
       exportJson();
     }
   }, [report, onExportError, exportJson]);
 
   const exportPdf = useCallback(async () => {
+    setFallback(null);
     try {
       const jsPDFModule = await loadJsPdf();
       const doc = new jsPDFModule.default();
@@ -45,6 +66,7 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
       doc.save(`interview-report-${report.sessionId}.pdf`);
     } catch (error) {
       onExportError?.(error instanceof Error ? error : new Error(String(error)), 'pdf');
+      setFallback('pdf');
       exportJson();
     }
   }, [report, onExportError, exportJson]);
@@ -52,7 +74,7 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
   return (
     <article className="isdk-report-card" aria-labelledby={headingId}>
       <div className="isdk-report-card__head">
-        <h2 className="isdk-report-card__title" id={headingId}>
+        <h2 className="isdk-report-card__title" id={headingId} ref={headingRef} tabIndex={-1}>
           Interview Report
         </h2>
         <span className="isdk-stamp">
@@ -114,8 +136,21 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
 
       <TranscriptViewer transcript={report.transcript} />
 
+      {fallback && (
+        <p className="isdk-report-card__export-notice" role="status">
+          {FALLBACK_MESSAGE[fallback]}
+        </p>
+      )}
+
       <div className="isdk-report-card__actions">
-        <button className="isdk-btn isdk-btn--secondary" type="button" onClick={exportJson}>
+        <button
+          className="isdk-btn isdk-btn--secondary"
+          type="button"
+          onClick={() => {
+            setFallback(null);
+            exportJson();
+          }}
+        >
           Export JSON
         </button>
         <button className="isdk-btn isdk-btn--secondary" type="button" onClick={exportCsv}>

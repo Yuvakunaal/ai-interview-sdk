@@ -1,10 +1,18 @@
 import type { TranscriptEntry } from '../hooks/build-report.js';
 
+// A field starting with =, +, -, or @ is interpreted as a formula by
+// Excel/Sheets when the CSV is opened — a candidate's own answer text is
+// untrusted input, so this is real CSV/formula-injection risk (OWASP),
+// not just delimiter-escaping. Prefixing with a leading apostrophe forces
+// spreadsheet apps to treat it as literal text.
+const FORMULA_TRIGGER = /^[=+\-@]/;
+
 function escapeCsvField(value: string): string {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  const safeValue = FORMULA_TRIGGER.test(value) ? `'${value}` : value;
+  if (/[",\n]/.test(safeValue)) {
+    return `"${safeValue.replace(/"/g, '""')}"`;
   }
-  return value;
+  return safeValue;
 }
 
 export function transcriptToCsv(transcript: TranscriptEntry[]): string {
