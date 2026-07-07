@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build": "turbo run build",
+    "build:site": "pnpm --filter @interview-sdk/landing build && pnpm --filter @interview-sdk/docs build && node scripts/compose-site.mjs",
     "dev": "turbo run dev",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",

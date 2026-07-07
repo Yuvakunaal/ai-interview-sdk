@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Callout } from '../../components/Callout';
+import { CodeBlock } from '../../components/CodeBlock';
 
 export const metadata: Metadata = { title: 'Coding Interview Mode' };
 
@@ -12,19 +14,19 @@ export default function CodingInterviews() {
         It does <em>not</em> plug into <code>&lt;InterviewWidget&gt;</code> or{' '}
         <code>ServerAnswerProcessor</code> today — there&apos;s no code editor UI or coding-specific
         question type in <code>@interview-sdk/core</code> yet. Bring your own code editor (Monaco,
-        CodeMirror), call this engine from your own API route, and render its result however you like.
+        CodeMirror), call this engine from your own API route, and render its result however you
+        like.
       </p>
 
       <h2>Install</h2>
-      <pre>
-        <code>npm install @interview-sdk/coding</code>
-      </pre>
+      <CodeBlock lang="bash" filename="terminal">
+        {`npm install @interview-sdk/coding`}
+      </CodeBlock>
       <p>Requires Docker on whatever machine runs it — your backend or CI, never the browser.</p>
 
       <h2>A minimal route</h2>
-      <pre>
-        <code>{`// app/api/coding/submit/route.ts
-import { CodingEvaluationEngine, DockerCodeExecutionProvider } from '@interview-sdk/coding';
+      <CodeBlock lang="ts" filename="app/api/coding/submit/route.ts">
+        {`import { CodingEvaluationEngine, DockerCodeExecutionProvider } from '@interview-sdk/coding';
 import type { CodingQuestion } from '@interview-sdk/coding';
 
 const question: CodingQuestion = {
@@ -43,8 +45,8 @@ export async function POST(request: Request) {
   const { code } = await request.json();
   const result = await engine.evaluate(question, { code, language: 'javascript' });
   return Response.json(result);
-}`}</code>
-      </pre>
+}`}
+      </CodeBlock>
       <p>
         <code>result</code> carries <code>passedCount</code>/<code>totalCount</code>,{' '}
         <code>totalScore</code> (weighted partial credit via each test case&apos;s{' '}
@@ -67,20 +69,22 @@ export async function POST(request: Request) {
       </p>
 
       <h2>What this doesn&apos;t do (yet)</h2>
-      <ul>
-        <li>
-          No code editor component — you own the textarea/Monaco/CodeMirror instance and send its
-          contents to your route.
-        </li>
-        <li>
-          No wiring into <code>&lt;InterviewWidget&gt;</code>, <code>useInterview</code>, or{' '}
-          <code>ServerAnswerProcessor</code> — this engine and the interview-question flow engine
-          run independently; combining a coding round with a regular Q&amp;A interview in one
-          session is on you to orchestrate today.
-        </li>
-        <li>Plagiarism / AI-generated-code detection.</li>
-        <li>Multi-file submissions.</li>
-      </ul>
+      <Callout type="note">
+        <ul>
+          <li>
+            No code editor component — you own the textarea/Monaco/CodeMirror instance and send its
+            contents to your route.
+          </li>
+          <li>
+            No wiring into <code>&lt;InterviewWidget&gt;</code>, <code>useInterview</code>, or{' '}
+            <code>ServerAnswerProcessor</code> — this engine and the interview-question flow engine
+            run independently; combining a coding round with a regular Q&amp;A interview in one
+            session is on you to orchestrate today.
+          </li>
+          <li>Plagiarism / AI-generated-code detection.</li>
+          <li>Multi-file submissions.</li>
+        </ul>
+      </Callout>
       <p>
         See the <code>@interview-sdk/coding</code> package README (
         <code>packages/coding/README.md</code> in the SDK repo) for the full API, including

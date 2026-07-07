@@ -13,7 +13,8 @@
   "dependencies": {
     "next": "^16.2.10",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "shiki": "^3.4.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

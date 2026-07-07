@@ -4,6 +4,9 @@ const nextConfig = {
   // tier (Vercel/Netlify/GitHub Pages), per the root README's Zero-Infra
   // Guarantee. No server-rendering, no API routes here.
   output: 'export',
+  // Mounted at /docs alongside the landing page's own static build — every
+  // route and internal asset path needs this prefix baked in at build time.
+  basePath: '/docs',
 };
 
 export default nextConfig;

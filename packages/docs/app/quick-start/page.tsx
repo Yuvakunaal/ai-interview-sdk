@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Callout } from '../../components/Callout';
+import { CodeBlock } from '../../components/CodeBlock';
 
 export const metadata: Metadata = { title: 'Quick Start (Client Mode)' };
 
@@ -12,30 +15,28 @@ export default function QuickStart() {
         provider directly from the browser, which is exactly why it&apos;s{' '}
         <strong>prototyping-only</strong>: your API key ships to every visitor&apos;s browser, and
         nothing stops a candidate from tampering with the score client-side. For anything real,
-        follow <a href="/production">Production Setup</a> instead — the widget code barely changes.
+        follow <Link href="/production">Production Setup</Link> instead — the widget code barely changes.
       </p>
 
       <h2>1. Install</h2>
-      <pre>
-        <code>
-          npm install @interview-sdk/core @interview-sdk/react @interview-sdk/adapter-openai
-        </code>
-      </pre>
+      <CodeBlock lang="bash" filename="terminal">
+        {`npm install @interview-sdk/core @interview-sdk/react @interview-sdk/adapter-openai`}
+      </CodeBlock>
       <p>Swap the adapter package for whichever provider you use — see the provider guides.</p>
 
       <h2>2. Add an API key</h2>
-      <pre>
-        <code>{`# .env.local — Client Mode only, never do this in production
-NEXT_PUBLIC_OPENAI_API_KEY=sk-...`}</code>
-      </pre>
+      <CodeBlock lang="bash" filename=".env.local">
+        {`# .env.local — Client Mode only, never do this in production
+NEXT_PUBLIC_OPENAI_API_KEY=sk-...`}
+      </CodeBlock>
       <p>
         The <code>NEXT_PUBLIC_</code> (or Vite&apos;s <code>VITE_</code>) prefix is what actually
         exposes it to the browser — that&apos;s the whole risk in one line.
       </p>
 
       <h2>3. Define questions + rubric</h2>
-      <pre>
-        <code>{`import type { Question, RubricDimensionInput } from '@interview-sdk/core';
+      <CodeBlock lang="ts" filename="lib/questions.ts">
+        {`import type { Question, RubricDimensionInput } from '@interview-sdk/core';
 
 const questions: Question[] = [
   { id: 'q1', prompt: 'Explain how hash maps handle collisions.', concepts: ['hashing', 'collisions'] },
@@ -44,12 +45,13 @@ const questions: Question[] = [
 const rubric: RubricDimensionInput[] = [
   { id: 'technical', label: 'Technical depth', weight: 3 },
   { id: 'communication', label: 'Communication clarity', weight: 1 },
-];`}</code>
-      </pre>
+];`}
+      </CodeBlock>
 
       <h2>4. Drop in InterviewWidget</h2>
-      <pre>
-        <code>{`import { InterviewWidget } from '@interview-sdk/react';
+      <CodeBlock lang="tsx" filename="App.tsx">
+        {`import '@interview-sdk/react/styles.css';
+import { InterviewWidget } from '@interview-sdk/react';
 import { OpenAIAdapter } from '@interview-sdk/adapter-openai';
 
 const adapter = new OpenAIAdapter({ apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY });
@@ -64,29 +66,29 @@ export default function App() {
       onSessionEnd={(report) => console.log(report)}
     />
   );
-}`}</code>
-      </pre>
+}`}
+      </CodeBlock>
 
       <h2>5. Run the project</h2>
-      <pre>
-        <code>npm run dev</code>
-      </pre>
+      <CodeBlock lang="bash" filename="terminal">
+        {`npm run dev`}
+      </CodeBlock>
       <p>
         That&apos;s a full interview: dynamic follow-ups, semantic evaluation, rubric scoring, and a
         report — with voice input if you also register a{' '}
-        <a href="/integrations/providers">voice provider adapter</a> and pass its{' '}
+        <Link href="/integrations/providers">voice provider adapter</Link> and pass its{' '}
         <code>transcribe</code> function to <code>InterviewWidget</code>.
       </p>
 
-      <blockquote>
+      <Callout type="warning">
         Client Mode refuses to render when <code>NODE_ENV=production</code> unless you pass{' '}
         <code>allowClientModeInProduction</code> explicitly — it&apos;s not a soft warning,
         it&apos;s a hard stop, on purpose.
-      </blockquote>
+      </Callout>
 
       <h2>Next: ship it for real</h2>
       <p>
-        <a href="/production">Production Setup (Server Mode)</a> walks through the same five steps
+        <Link href="/production">Production Setup (Server Mode)</Link> walks through the same five steps
         with your key and scoring logic moved server-side.
       </p>
     </>

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Callout } from '../../components/Callout';
 
 export const metadata: Metadata = { title: 'Security & compliance' };
 
@@ -14,57 +16,63 @@ export default function Security() {
       </p>
 
       <h2>Architecture-level security model</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Concern</th>
-            <th>How it&apos;s handled</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>API key exposure</td>
-            <td>
-              Solved architecturally: Server Mode keeps every AI call, scoring, and rubric
-              application in <code>@interview-sdk/server</code>, on your backend. Client Mode
-              refuses to run under <code>NODE_ENV=production</code> without an explicit override.
-            </td>
-          </tr>
-          <tr>
-            <td>Score tampering</td>
-            <td>
-              Final scores are computed server-side; the client never has write access to the score
-              object. <code>ServerAnswerProcessor</code> ignores a client-supplied question/rubric
-              and only uses <code>answer.questionId</code> to look up its own canonical config.
-            </td>
-          </tr>
-          <tr>
-            <td>Prompt injection</td>
-            <td>
-              All candidate free-text is treated as untrusted and isolated in its own{' '}
-              <code>user</code>-role message — never concatenated into the system prompt — across
-              every adapter and every AI call core makes.
-            </td>
-          </tr>
-          <tr>
-            <td>Webhook spoofing</td>
-            <td>
-              HMAC-signed payloads (timestamped, Stripe/GitHub-style) with idempotency keys; a
-              tolerance window rejects stale/replayed deliveries.
-            </td>
-          </tr>
-          <tr>
-            <td>Sandbox escape (<a href="/coding-interviews">Coding Interview Mode</a>)</td>
-            <td>
-              Isolated in its own package (<code>@interview-sdk/coding</code>) so a vulnerability
-              there can&apos;t reach the rest of the SDK. The default executor runs candidate code
-              in Docker with <code>--network=none</code>, a read-only rootfs, dropped capabilities,
-              and resource limits — never Node&apos;s <code>vm</code> module or <code>vm2</code>,
-              both documented as escapable.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div className="docs-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Concern</th>
+              <th>How it&apos;s handled</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>API key exposure</td>
+              <td>
+                Solved architecturally: Server Mode keeps every AI call, scoring, and rubric
+                application in <code>@interview-sdk/server</code>, on your backend. Client Mode
+                refuses to run under <code>NODE_ENV=production</code> without an explicit override.
+              </td>
+            </tr>
+            <tr>
+              <td>Score tampering</td>
+              <td>
+                Final scores are computed server-side; the client never has write access to the
+                score object. <code>ServerAnswerProcessor</code> ignores a client-supplied
+                question/rubric and only uses <code>answer.questionId</code> to look up its own
+                canonical config.
+              </td>
+            </tr>
+            <tr>
+              <td>Prompt injection</td>
+              <td>
+                All candidate free-text is treated as untrusted and isolated in its own{' '}
+                <code>user</code>-role message — never concatenated into the system prompt — across
+                every adapter and every AI call core makes.
+              </td>
+            </tr>
+            <tr>
+              <td>Webhook spoofing</td>
+              <td>
+                HMAC-signed payloads (timestamped, Stripe/GitHub-style) with idempotency keys; a
+                tolerance window rejects stale/replayed deliveries. See{' '}
+                <Link href="/production">Production Setup</Link> for the dispatch/verify code.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Sandbox escape (<Link href="/coding-interviews">Coding Interview Mode</Link>)
+              </td>
+              <td>
+                Isolated in its own package (<code>@interview-sdk/coding</code>) so a vulnerability
+                there can&apos;t reach the rest of the SDK. The default executor runs candidate code
+                in Docker with <code>--network=none</code>, a read-only rootfs, dropped
+                capabilities, and resource limits — never Node&apos;s <code>vm</code> module or{' '}
+                <code>vm2</code>, both documented as escapable.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <h2>What&apos;s your responsibility</h2>
       <ul>
@@ -111,10 +119,10 @@ export default function Security() {
           over biometric ones.
         </li>
       </ul>
-      <blockquote>
+      <Callout type="warning">
         This isn&apos;t legal advice — get a real compliance review before shipping anything in this
         category.
-      </blockquote>
+      </Callout>
 
       <h2>Before you go live</h2>
       <ol>
@@ -127,7 +135,7 @@ export default function Security() {
           Verify webhook signatures on receipt, with a tolerance window, before trusting a payload.
         </li>
         <li>
-          Run the <a href="/trust-tooling">Interview Simulator</a> against an adversarial
+          Run the <Link href="/trust-tooling">Interview Simulator</Link> against an adversarial
           (prompt-injection) persona and confirm your adapter isn&apos;t swayed by it.
         </li>
         <li>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CodeBlock } from '../components/CodeBlock';
 
 export default function Home() {
   return (
@@ -11,9 +12,9 @@ export default function Home() {
         data.
       </p>
 
-      <pre>
-        <code>npm install @interview-sdk/core @interview-sdk/react</code>
-      </pre>
+      <CodeBlock lang="bash" filename="terminal">
+        {`npm install @interview-sdk/core @interview-sdk/react`}
+      </CodeBlock>
 
       <h2>Setup walkthrough video</h2>
       <p>
@@ -26,6 +27,10 @@ export default function Home() {
 
       <h2>Where to go next</h2>
       <ul>
+        <li>
+          <Link href="/dashboard">Local Dashboard</Link> — design your interview and get real
+          integration code in a browser, before you open an editor. Start here.
+        </li>
         <li>
           <Link href="/quick-start">Quick Start (Client Mode)</Link> — fastest path to a running
           demo, no backend required.
@@ -43,6 +48,17 @@ export default function Home() {
         </li>
         <li>
           <Link href="/cookbook/rubric-evaluation">Rubric &amp; evaluation cookbook</Link>
+        </li>
+        <li>
+          <Link href="/styling-and-composition">Styling, composition &amp; accessibility</Link> —
+          theming, headless mode, and building your own UI on the same pieces.
+        </li>
+        <li>
+          <Link href="/error-handling">Error handling &amp; resilience</Link> — the full provider
+          error taxonomy, hard limits, and retries.
+        </li>
+        <li>
+          <Link href="/session-persistence-and-events">Session persistence &amp; events</Link>
         </li>
         <li>
           <Link href="/security">Security &amp; compliance checklist</Link>

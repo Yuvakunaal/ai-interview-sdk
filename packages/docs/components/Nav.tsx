@@ -1,63 +1,80 @@
+'use client';
+
 import Link from 'next/link';
-
-interface NavSection {
-  label: string;
-  items: { href: string; label: string }[];
-}
-
-const SECTIONS: NavSection[] = [
-  {
-    label: 'Get started',
-    items: [
-      { href: '/', label: 'Overview' },
-      { href: '/quick-start', label: 'Quick Start (Client Mode)' },
-      { href: '/production', label: 'Production Setup (Server Mode)' },
-    ],
-  },
-  {
-    label: 'Integrations',
-    items: [
-      { href: '/integrations/react-nextjs', label: 'React + Next.js' },
-      { href: '/integrations/providers', label: 'AI & voice providers' },
-    ],
-  },
-  {
-    label: 'Guides',
-    items: [
-      { href: '/cookbook/rubric-evaluation', label: 'Rubric & evaluation cookbook' },
-      { href: '/coding-interviews', label: 'Coding Interview Mode' },
-      { href: '/security', label: 'Security & compliance' },
-      { href: '/trust-tooling', label: 'Simulator & Bias Harness' },
-    ],
-  },
-];
+import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { NAV_SECTIONS } from '../lib/nav-data';
+import { SearchDialog } from './SearchDialog';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Nav() {
+  const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // The sidebar lives in the persistent layout, not the page — close the
+  // mobile drawer on every navigation rather than leaving it open over
+  // whatever page just loaded underneath it.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
   return (
     <nav className="docs-nav" aria-label="Documentation">
-      <Link href="/" className="docs-nav-brand">
-        @interview<span>-sdk</span>
-      </Link>
-      {SECTIONS.map((section) => (
-        <div key={section.label} className="docs-nav-section">
-          <p className="docs-nav-heading">{section.label}</p>
-          <ul>
-            {section.items.map((item) => (
-              <li key={item.href}>
-                <Link href={item.href}>{item.label}</Link>
-              </li>
-            ))}
-          </ul>
+      <div className="docs-nav-top">
+        <div className="docs-nav-brand">
+          {/* Plain <a>, not next/link — this deliberately escapes the docs
+              site's own basePath to land on the marketing site's root. */}
+          <a href="/" className="docs-nav-wordmark">
+            @interview<span>-sdk</span>
+          </a>
+          <span className="docs-nav-brand-badge">Docs</span>
         </div>
-      ))}
-      <a
-        className="docs-nav-github"
-        href="https://github.com/Yuvakunaal/ai-interview-sdk"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        GitHub ↗
-      </a>
+        <SearchDialog />
+        <ThemeToggle />
+        <button
+          type="button"
+          className="docs-nav-toggle"
+          aria-expanded={menuOpen}
+          aria-controls="docs-nav-menu"
+          aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
+      </div>
+
+      <div id="docs-nav-menu" className={menuOpen ? 'docs-nav-menu is-open' : 'docs-nav-menu'}>
+        <div className="docs-nav-sections">
+          {NAV_SECTIONS.map((section) => (
+            <div key={section.label} className="docs-nav-section">
+              <p className="docs-nav-heading">{section.label}</p>
+              <ul>
+                {section.items.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={pathname === item.href ? 'page' : undefined}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <a
+          className="docs-nav-github"
+          href="https://github.com/Yuvakunaal/ai-interview-sdk"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GitHub ↗
+        </a>
+      </div>
     </nav>
   );
 }

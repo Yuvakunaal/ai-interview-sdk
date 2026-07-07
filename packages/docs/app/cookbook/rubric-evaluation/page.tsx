@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { CodeBlock } from '../../../components/CodeBlock';
 
 export const metadata: Metadata = { title: 'Rubric & evaluation cookbook' };
 
@@ -16,13 +18,13 @@ export default function RubricCookbook() {
         <code>defineRubric()</code> normalizes whatever weights you give it — they don&apos;t need
         to sum to 100, or to anything in particular:
       </p>
-      <pre>
-        <code>{`defineRubric([
+      <CodeBlock lang="ts">
+        {`defineRubric([
   { id: 'technical', label: 'Technical depth', weight: 3 },
   { id: 'communication', label: 'Communication', weight: 1 },
 ]);
-// technical carries 75% of the total score, communication 25% — same as weight: 75/25`}</code>
-      </pre>
+// technical carries 75% of the total score, communication 25% — same as weight: 75/25`}
+      </CodeBlock>
       <p>
         It fails loud — throwing <code>RubricValidationError</code> — on an empty dimension list, a
         missing id, a duplicate id, or a non-positive weight. This runs at construction time, not
@@ -42,9 +44,9 @@ export default function RubricCookbook() {
         AI-generated hint), and it&apos;s what the Follow-Up Engine checks before deciding whether
         to probe deeper.
       </p>
-      <pre>
-        <code>{`{ id: 'q1', prompt: 'Explain how hash maps handle collisions.', concepts: ['hashing', 'collisions'] }`}</code>
-      </pre>
+      <CodeBlock lang="ts">
+        {`{ id: 'q1', prompt: 'Explain how hash maps handle collisions.', concepts: ['hashing', 'collisions'] }`}
+      </CodeBlock>
 
       <h2>Follow-ups are deterministic about when, not what</h2>
       <p>A follow-up is generated when all of these are true:</p>
@@ -72,9 +74,9 @@ export default function RubricCookbook() {
         (via <code>matchesAnswerKey</code> in the result), on top of — not instead of — semantic
         concept matching:
       </p>
-      <pre>
-        <code>{`{ id: 'q1', prompt: '...', concepts: ['hashing'], answerKey: 'A reference-quality answer here.' }`}</code>
-      </pre>
+      <CodeBlock lang="ts">
+        {`{ id: 'q1', prompt: '...', concepts: ['hashing'], answerKey: 'A reference-quality answer here.' }`}
+      </CodeBlock>
 
       <h2>Multi-turn context</h2>
       <p>
@@ -83,13 +85,23 @@ export default function RubricCookbook() {
         visible to the model — not just the current answer in isolation.
       </p>
 
+      <h2>Multi-language interviews</h2>
+      <p>
+        <code>InterviewConfig.language</code> and <code>voice.language</code> accept any BCP-47-ish
+        tag (<code>en</code>, <code>hi</code>, <code>te</code>, <code>en-US</code>) —{' '}
+        <code>validateInterviewConfig</code> checks the tag is well-formed, nothing more. There is
+        no SDK-side translation layer: evaluation quality for a given language is entirely a
+        function of the underlying model&apos;s own multilingual understanding, including for
+        mixed-language answers.
+      </p>
+
       <h2>Verifying your rubric is actually fair</h2>
       <p>
-        Don&apos;t guess. <a href="/trust-tooling">Run the Interview Simulator</a> against scripted
-        candidate personas (strong, weak, off-topic, silent, adversarial) before a real candidate
-        ever sees the rubric, and the <a href="/trust-tooling">Bias &amp; Consistency Harness</a>{' '}
-        against labeled samples with expected score ranges to catch inconsistency across repeated
-        runs.
+        Don&apos;t guess. <Link href="/trust-tooling">Run the Interview Simulator</Link> against
+        scripted candidate personas (strong, weak, off-topic, silent, adversarial) before a real
+        candidate ever sees the rubric, and the{' '}
+        <Link href="/trust-tooling">Bias &amp; Consistency Harness</Link> against labeled samples
+        with expected score ranges to catch inconsistency across repeated runs.
       </p>
     </>
   );

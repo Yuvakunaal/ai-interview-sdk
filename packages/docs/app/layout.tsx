@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Nav } from '../components/Nav';
+import { PrevNext } from '../components/PrevNext';
+import { TableOfContents } from '../components/TableOfContents';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -18,7 +20,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <div className="docs-shell">
           <Nav />
-          <main className="docs-content">{children}</main>
+          <div className="docs-main">
+            <main className="docs-content">
+              {children}
+              <PrevNext />
+            </main>
+            <TableOfContents />
+          </div>
         </div>
       </body>
     </html>

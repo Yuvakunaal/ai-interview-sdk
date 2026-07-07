@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { App } from './App.js';
 
@@ -69,5 +69,29 @@ describe('App', () => {
     const skipLink = screen.getByRole('link', { name: 'Skip to content' });
     expect(skipLink).toHaveAttribute('href', '#main');
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main');
+  });
+
+  it('toggles the mobile nav menu open and closed via the nav toggle button', () => {
+    render(<App />);
+    const toggle = screen.getByRole('button', { name: 'Open menu' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveAttribute('aria-controls', 'primary-nav');
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'Close menu' })).toBe(toggle);
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('closes the mobile nav menu after a link inside it is clicked', () => {
+    render(<App />);
+    const toggle = screen.getByRole('button', { name: 'Open menu' });
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(screen.getByRole('link', { name: 'Architecture' }));
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
   });
 });

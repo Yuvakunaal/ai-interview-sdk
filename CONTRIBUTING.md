@@ -5,7 +5,7 @@ pnpm workspaces + Turborepo.
 
 ## Prerequisites
 
-- Node.js >= 18.18
+- Node.js >= 20.19
 - pnpm (run `corepack enable` to get the version pinned in `package.json`)
 
 ## Getting Started
@@ -27,6 +27,7 @@ packages/
 ├── server/                @interview-sdk/server
 ├── coding/               @interview-sdk/coding
 ├── cli/                  @interview-sdk/cli
+├── dashboard/            @interview-sdk/dashboard (internal, unpublished)
 ├── adapters/
 │   ├── adapter-openai/
 │   ├── adapter-claude/
@@ -34,7 +35,8 @@ packages/
 │   ├── adapter-deepgram/
 │   └── adapter-elevenlabs/
 ├── examples/
-└── docs/
+├── docs/                 documentation site
+└── landing/              @interview-sdk/landing
 ```
 
 ## Common Commands

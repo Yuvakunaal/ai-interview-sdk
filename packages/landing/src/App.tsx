@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { useState } from 'react';
 
 const CHECK_ICON = (
   <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -98,6 +99,9 @@ const SPEC_ROWS: SpecRow[] = [
 const GITHUB_URL = 'https://github.com/Yuvakunaal/ai-interview-sdk';
 
 export function App() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = () => setMenuOpen(false);
+
   return (
     <>
       <a className="skip-link" href="#main">
@@ -106,14 +110,45 @@ export function App() {
 
       <header className="nav">
         <div className="nav-inner">
-          <a className="wordmark" href="#top">
+          <a className="wordmark" href="#top" onClick={closeMenu}>
             @interview<span>-sdk</span>
           </a>
-          <nav className="nav-links" aria-label="Primary">
-            <a href="#architecture">Architecture</a>
-            <a href="#spec">Spec sheet</a>
-            <a href="#start">Quickstart</a>
-            <a className="nav-github" href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+          <button
+            type="button"
+            className="nav-toggle"
+            aria-expanded={menuOpen}
+            aria-controls="primary-nav"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <span aria-hidden="true" />
+            <span aria-hidden="true" />
+            <span aria-hidden="true" />
+          </button>
+          <nav
+            id="primary-nav"
+            className={menuOpen ? 'nav-links is-open' : 'nav-links'}
+            aria-label="Primary"
+          >
+            <a href="#architecture" onClick={closeMenu}>
+              Architecture
+            </a>
+            <a href="#spec" onClick={closeMenu}>
+              Spec sheet
+            </a>
+            <a href="#start" onClick={closeMenu}>
+              Quickstart
+            </a>
+            <a href="/docs" onClick={closeMenu}>
+              Docs
+            </a>
+            <a
+              className="nav-github"
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={closeMenu}
+            >
               GitHub ↗
             </a>
           </nav>

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { CodeBlock } from '../../../components/CodeBlock';
 
 export const metadata: Metadata = { title: 'React + Next.js integration' };
 
@@ -7,27 +8,26 @@ export default function ReactNextjs() {
     <>
       <h1>React + Next.js integration</h1>
       <p className="docs-lede">
-        <code>@interview-sdk/react</code> is a plain React component library — no framework lock-in.
-        This page covers the parts specific to Next.js: client/server component boundaries, and
-        wiring the Server Mode route in the App Router.
+        <code>@interview-sdk/react</code> is a plain React component library — no framework
+        lock-in. This page covers the parts specific to Next.js: client/server component
+        boundaries, and wiring the Server Mode route in the App Router.
       </p>
 
       <h2>Client component boundary</h2>
       <p>
         <code>InterviewWidget</code> (and every component in the package) uses hooks and browser
         APIs, so any file that renders it in the App Router needs{' '}
-        <code>&apos;use client&apos;</code>
-        at the top:
+        <code>&apos;use client&apos;</code> at the top:
       </p>
-      <pre>
-        <code>{`'use client';
+      <CodeBlock lang="tsx" filename="app/interview/page.tsx">
+        {`'use client';
 
 import { InterviewWidget } from '@interview-sdk/react';
 
 export default function InterviewPage() {
   return <InterviewWidget questions={questions} rubric={rubric} mode="server" apiBaseUrl="/api/interview/answer" />;
-}`}</code>
-      </pre>
+}`}
+      </CodeBlock>
       <p>
         Keep the questions/rubric data itself in a plain <code>.ts</code> module you import from
         both the client page and the server route — that&apos;s a Server Component by default and
@@ -36,9 +36,8 @@ export default function InterviewPage() {
       </p>
 
       <h2>The Server Mode API route</h2>
-      <pre>
-        <code>{`// app/api/interview/answer/route.ts
-import { ServerAnswerProcessor, createInterviewAnswerHandler } from '@interview-sdk/server';
+      <CodeBlock lang="ts" filename="app/api/interview/answer/route.ts">
+        {`import { ServerAnswerProcessor, createInterviewAnswerHandler } from '@interview-sdk/server';
 import { OpenAIAdapter } from '@interview-sdk/adapter-openai';
 import { questions, rubric } from '../../../../lib/questions';
 
@@ -48,8 +47,8 @@ const processor = new ServerAnswerProcessor({
   adapter: new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY! }),
 });
 
-export const POST = createInterviewAnswerHandler(processor);`}</code>
-      </pre>
+export const POST = createInterviewAnswerHandler(processor);`}
+      </CodeBlock>
       <p>
         This constructs <code>processor</code> once at module scope and reuses it across requests —
         the standard pattern for Route Handlers, and how{' '}
@@ -62,7 +61,8 @@ export const POST = createInterviewAnswerHandler(processor);`}</code>
         Pass a <code>transcribe</code> prop (<code>(audio: Blob) =&gt; Promise&lt;string&gt;</code>)
         to enable the mic button. A <code>VoiceProviderAdapter</code>&apos;s own{' '}
         <code>transcribe()</code> takes an <code>ArrayBuffer</code>/<code>Uint8Array</code> and
-        returns a <code>TranscriptResult</code>, so wrap it: <code>{`async (audio) => (await voiceAdapter.transcribe(await audio.arrayBuffer())).text`}</code>.
+        returns a <code>TranscriptResult</code>, so wrap it:{' '}
+        <code>{`async (audio) => (await voiceAdapter.transcribe(await audio.arrayBuffer())).text`}</code>.
         In Server Mode, run the voice provider adapter server-side too — proxy it through its own
         API route, the same way the answer-scoring route works, so that key stays off the client
         as well.
@@ -70,12 +70,12 @@ export const POST = createInterviewAnswerHandler(processor);`}</code>
 
       <h2>Non-Next.js frameworks</h2>
       <p>
-        Everything above works the same in Vite/CRA/Remix for the client side — only the Server Mode
-        route&apos;s file location and export syntax change.{' '}
-        <code>createInterviewAnswerHandler</code> returns a Fetch API{' '}
-        <code>(Request) =&gt; Promise&lt;Response&gt;</code>, so it drops into Remix loaders,
-        Cloudflare Workers, Deno, Bun, or Hono directly; for plain Node <code>http</code> or
-        Express, see the small adapter snippet in the <code>@interview-sdk/server</code> README.
+        Everything above works the same in Vite/CRA/Remix for the client side — only the Server
+        Mode route&apos;s file location and export syntax change. <code>createInterviewAnswerHandler</code>{' '}
+        returns a Fetch API <code>(Request) =&gt; Promise&lt;Response&gt;</code>, so it drops into
+        Remix loaders, Cloudflare Workers, Deno, Bun, or Hono directly; for plain Node{' '}
+        <code>http</code> or Express, see the small adapter snippet in the{' '}
+        <code>@interview-sdk/server</code> README.
       </p>
     </>
   );
