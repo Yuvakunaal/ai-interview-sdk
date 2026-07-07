@@ -26,6 +26,14 @@ provider key you end up using). Refuses to overwrite either existing file
 unless you pass `--force`. Pass `--dir <path>` to scaffold into a directory
 other than the current working directory.
 
+For `--framework nextjs`, if `app/layout.tsx` (or `src/app/layout.tsx`)
+already exists, `init` also adds the one client-side import
+`<InterviewWidget>` needs and is easy to forget —
+`import '@interview-sdk/react/styles.css';` — directly into it, since the
+widget otherwise renders completely unstyled with no error. If neither file
+exists yet, it prints a reminder instead of guessing at your layout's
+structure.
+
 ## `dashboard` — customize your interview and copy the code
 
 ```bash

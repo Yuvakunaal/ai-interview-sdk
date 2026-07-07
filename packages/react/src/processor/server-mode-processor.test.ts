@@ -25,6 +25,7 @@ function jsonResponse(
     ok: init.ok ?? true,
     status: init.status ?? 200,
     statusText: init.statusText ?? 'OK',
+    headers: new Headers({ 'Content-Type': 'application/json' }),
     json: async () => body,
     text: async () => JSON.stringify(body),
   } as Response;
@@ -91,6 +92,74 @@ describe('ServerModeProcessor', () => {
     const processor = new ServerModeProcessor({ fetchImpl });
 
     await expect(processor.processAnswer(input)).rejects.toThrow(ServerModeRequestError);
+  });
+
+  it('extracts just the message from a JSON {error} body, not a raw double-stringified dump', async () => {
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse(
+        { error: 'GEMINI_API_KEY is not set.' },
+        { ok: false, status: 500, statusText: 'Internal Server Error' },
+      ),
+    );
+    const processor = new ServerModeProcessor({ fetchImpl });
+
+    await expect(processor.processAnswer(input)).rejects.toThrow(
+      'Interview server responded with 500 Internal Server Error: GEMINI_API_KEY is not set.',
+    );
+  });
+
+  it('replaces an HTML error page with a clean message instead of dumping it verbatim into the UI', async () => {
+    // A framework-level crash (e.g. Next.js's own dev-mode error overlay)
+    // can return a full HTML page as the response body — thousands of
+    // characters of <script> tags and a stack trace, never meant for a
+    // candidate to see rendered as plain text on screen.
+    const hugeHtmlBody = `<!DOCTYPE html><html>${'<script>x</script>'.repeat(200)}</html>`;
+    const fetchImpl = vi.fn(
+      async () =>
+        ({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          headers: new Headers({ 'Content-Type': 'text/html; charset=utf-8' }),
+          json: async () => {
+            throw new Error('not json');
+          },
+          text: async () => hugeHtmlBody,
+        }) as unknown as Response,
+    );
+    const processor = new ServerModeProcessor({ fetchImpl });
+
+    await expect(processor.processAnswer(input)).rejects.toThrow(
+      'Interview server responded with 500 Internal Server Error: The server returned an unexpected error page instead of a JSON response — check your server logs for details.',
+    );
+  });
+
+  it('truncates other unexpected non-JSON, non-HTML bodies instead of dumping them verbatim', async () => {
+    const longPlainText = 'x'.repeat(2000);
+    const fetchImpl = vi.fn(
+      async () =>
+        ({
+          ok: false,
+          status: 502,
+          statusText: 'Bad Gateway',
+          headers: new Headers({ 'Content-Type': 'text/plain' }),
+          json: async () => {
+            throw new Error('not json');
+          },
+          text: async () => longPlainText,
+        }) as unknown as Response,
+    );
+    const processor = new ServerModeProcessor({ fetchImpl });
+
+    let caught: unknown;
+    try {
+      await processor.processAnswer(input);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(ServerModeRequestError);
+    expect((caught as Error).message.length).toBeLessThan(600);
   });
 
   it('throws ServerModeRequestError when the response has no evaluation', async () => {

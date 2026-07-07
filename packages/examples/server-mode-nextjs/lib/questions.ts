@@ -2,19 +2,14 @@ import type { Question, RubricDimensionInput } from '@interview-sdk/core';
 
 export const questions: Question[] = [
   {
-    id: 'q1',
-    prompt: 'How does a hash map resolve collisions in a production system?',
-    concepts: ['hashing', 'collision resolution'],
+    id: 'q3',
+    prompt: 'What is select statement in SQL?',
+    concepts: ['rows'],
   },
   {
     id: 'q2',
-    prompt: 'What happens to a React component when state changes?',
-    concepts: ['re-render', 'virtual dom'],
-  },
-  {
-    id: 'q3',
-    prompt: 'Describe one trade-off you would make when designing a reliable API.',
-    concepts: ['trade-offs', 'reliability'],
+    prompt: 'To edit the column name, what command you will write?',
+    concepts: ['alter'],
   },
 ];
 

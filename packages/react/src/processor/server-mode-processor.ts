@@ -2,6 +2,34 @@ import type { InterviewProcessor, ProcessAnswerInput, ProcessAnswerResult } from
 
 export class ServerModeRequestError extends Error {}
 
+const MAX_ERROR_BODY_LENGTH = 500;
+
+/**
+ * A non-2xx response body is either the developer's own handler returning
+ * a clean `{ error: string }` (the expected case — extract just that
+ * message), or something else entirely reaching the browser unfiltered —
+ * most commonly a framework's own HTML dev-error page when the route
+ * handler itself crashed (e.g. Next.js's error overlay), but also possibly
+ * a reverse proxy's error page or a raw stack trace. An HTML body is never
+ * meant to be read as text, so it's replaced outright rather than merely
+ * truncated; anything else unexpected is at least capped to a bounded,
+ * safe length instead of dumped verbatim into a candidate-facing UI.
+ */
+function describeErrorBody(bodyText: string, contentType: string | null): string {
+  try {
+    const parsed = JSON.parse(bodyText) as { error?: unknown };
+    if (typeof parsed.error === 'string') return parsed.error;
+  } catch {
+    // Not JSON — fall through below.
+  }
+  if (contentType?.includes('text/html') || bodyText.trimStart().startsWith('<!DOCTYPE')) {
+    return 'The server returned an unexpected error page instead of a JSON response — check your server logs for details.';
+  }
+  return bodyText.length > MAX_ERROR_BODY_LENGTH
+    ? `${bodyText.slice(0, MAX_ERROR_BODY_LENGTH)}…`
+    : bodyText;
+}
+
 export interface ServerModeProcessorConfig {
   /**
    * URL to POST each answer to. The developer's `@interview-sdk/server`
@@ -43,9 +71,10 @@ export class ServerModeProcessor implements InterviewProcessor {
 
     if (!response.ok) {
       const bodyText = await response.text().catch(() => '');
+      const detail = bodyText ? describeErrorBody(bodyText, response.headers.get('Content-Type')) : '';
       throw new ServerModeRequestError(
         `Interview server responded with ${response.status} ${response.statusText}` +
-          (bodyText ? `: ${bodyText}` : ''),
+          (detail ? `: ${detail}` : ''),
       );
     }
 

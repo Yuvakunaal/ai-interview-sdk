@@ -48,6 +48,9 @@ async function runInit(args: string[]): Promise<number> {
     force: values.force,
   });
   console.log(`Wrote:\n${result.filesWritten.map((file) => `  ${file}`).join('\n')}`);
+  for (const warning of result.warnings) {
+    console.log(`\n⚠ ${warning}`);
+  }
   return 0;
 }
 

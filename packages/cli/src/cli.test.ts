@@ -70,6 +70,11 @@ describe('main — init', () => {
     expect(await main(['init', '--dir', dir])).toBe(1);
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('already exists'));
   });
+
+  it('warns about the missing stylesheet import when no root layout exists yet', async () => {
+    expect(await main(['init', '--dir', dir])).toBe(0);
+    expect(output()).toContain('styles.css');
+  });
 });
 
 describe('main — simulate', () => {

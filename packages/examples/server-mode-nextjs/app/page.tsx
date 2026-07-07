@@ -2,8 +2,8 @@
 
 import { InterviewWidget } from '@interview-sdk/react';
 import type { InterviewReport } from '@interview-sdk/react';
-import { mockSynthesize, mockTranscribe } from '../lib/mock-voice';
 import { questions, rubric } from '../lib/questions';
+import { synthesizeViaApi, transcribeViaApi } from '../lib/voice-client';
 
 /**
  * The report `onSessionEnd` hands you is assembled client-side from
@@ -40,8 +40,9 @@ export default function Page() {
         score object — see <code>app/api/interview/answer/route.ts</code>.
       </p>
       <p>
-        The route uses a mock adapter by default so this runs with zero setup. Swap in a real{' '}
-        <code>@interview-sdk/adapter-*</code> — see the TODO in that file — for production.
+        The route runs a real <code>@interview-sdk/adapter-gemini</code> for evaluation and real{' '}
+        <code>@interview-sdk/adapter-elevenlabs</code> for voice — both keys stay server-side (see{' '}
+        <code>app/api/interview/answer/route.ts</code> and <code>app/api/voice/*/route.ts</code>).
       </p>
       <p>
         When the interview finishes, the report is sent to{' '}
@@ -56,8 +57,9 @@ export default function Page() {
         apiBaseUrl="/api/interview/answer"
         maxFollowUpDepth={1}
         sessionTimeoutMs={1_080_000}
-        synthesize={mockSynthesize}
-        transcribe={mockTranscribe}
+        roleTitle="Junior SQL Analyst"
+        synthesize={synthesizeViaApi}
+        transcribe={transcribeViaApi}
         onSessionEnd={(report: InterviewReport) => {
           void submitFinalReport(report);
         }}

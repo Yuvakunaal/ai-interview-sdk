@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -72,5 +72,59 @@ describe('scaffoldServerRoute', () => {
     await expect(scaffoldServerRoute({ dir, framework: 'django' as never })).rejects.toThrow(
       CliUsageError,
     );
+  });
+
+  describe('stylesheet import (nextjs)', () => {
+    it('prepends the required stylesheet import to an existing app/layout.tsx', async () => {
+      const layoutPath = join(dir, 'app/layout.tsx');
+      await mkdir(join(dir, 'app'), { recursive: true });
+      const original = `export default function RootLayout({ children }) {\n  return <html><body>{children}</body></html>;\n}\n`;
+      await writeFile(layoutPath, original);
+
+      const result = await scaffoldServerRoute({ dir });
+
+      const content = await readFile(layoutPath, 'utf8');
+      expect(content).toContain("import '@interview-sdk/react/styles.css';");
+      // The developer's own layout content must survive untouched below the new import.
+      expect(content).toContain(original);
+      expect(result.filesWritten).toContain(layoutPath);
+    });
+
+    it('also finds src/app/layout.tsx', async () => {
+      const layoutPath = join(dir, 'src/app/layout.tsx');
+      await mkdir(join(dir, 'src/app'), { recursive: true });
+      await writeFile(layoutPath, 'export default function RootLayout() { return null; }\n');
+
+      const result = await scaffoldServerRoute({ dir });
+
+      const content = await readFile(layoutPath, 'utf8');
+      expect(content).toContain("import '@interview-sdk/react/styles.css';");
+      expect(result.filesWritten).toContain(layoutPath);
+    });
+
+    it('does not duplicate the import, or report the file as written, if it is already present', async () => {
+      const layoutPath = join(dir, 'app/layout.tsx');
+      await mkdir(join(dir, 'app'), { recursive: true });
+      const original = `import '@interview-sdk/react/styles.css';\n\nexport default function RootLayout() { return null; }\n`;
+      await writeFile(layoutPath, original);
+
+      const result = await scaffoldServerRoute({ dir });
+
+      const content = await readFile(layoutPath, 'utf8');
+      expect(content).toBe(original);
+      expect(result.filesWritten).not.toContain(layoutPath);
+    });
+
+    it('warns instead of failing when no root layout file exists yet', async () => {
+      const result = await scaffoldServerRoute({ dir });
+
+      expect(result.warnings.some((w) => w.includes('styles.css'))).toBe(true);
+    });
+
+    it('does not attempt stylesheet wiring for framework: node (no HTML layout exists)', async () => {
+      const result = await scaffoldServerRoute({ dir, framework: 'node' });
+
+      expect(result.warnings).toHaveLength(0);
+    });
   });
 });

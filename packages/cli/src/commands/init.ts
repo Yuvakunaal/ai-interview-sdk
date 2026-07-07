@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { CliConfigError, CliUsageError } from '../errors.js';
 import { fileExists } from '../fs-utils.js';
@@ -14,6 +14,8 @@ export interface ScaffoldServerRouteOptions {
 
 export interface ScaffoldResult {
   filesWritten: string[];
+  /** Non-fatal notices — e.g. the stylesheet import couldn't be auto-wired because no root layout file was found yet. */
+  warnings: string[];
 }
 
 const PLACEHOLDER_ADAPTER_SNIPPET = `{
@@ -78,6 +80,35 @@ const TEMPLATES: Record<ScaffoldFramework, { relativePath: string; content: () =
 };
 
 const ENV_EXAMPLE_RELATIVE_PATH = '.env.example';
+const STYLESHEET_IMPORT_SPECIFIER = '@interview-sdk/react/styles.css';
+const STYLESHEET_IMPORT_LINE = `import '${STYLESHEET_IMPORT_SPECIFIER}';`;
+// The two conventional locations for a root layout under the App Router —
+// whichever exists is the one real developers actually have.
+const ROOT_LAYOUT_CANDIDATES = ['app/layout.tsx', 'src/app/layout.tsx'];
+
+/**
+ * The widget renders completely unstyled without this import, and it's easy
+ * to forget since nothing fails loudly when it's missing — confirmed as a
+ * real, live bug in this monorepo's own server-mode-nextjs example. Adds it
+ * to whichever root layout file already exists, rather than fabricating a
+ * new one (a real layout has required structure — <html>/<body>, exported
+ * metadata — this CLI has no business inventing blindly).
+ */
+async function ensureStylesheetImport(dir: string): Promise<{ path?: string; updated: boolean }> {
+  for (const relative of ROOT_LAYOUT_CANDIDATES) {
+    const path = join(dir, relative);
+    if (!(await fileExists(path))) continue;
+
+    const content = await readFile(path, 'utf8');
+    if (content.includes(STYLESHEET_IMPORT_SPECIFIER)) {
+      return { path, updated: false };
+    }
+
+    await writeFile(path, `${STYLESHEET_IMPORT_LINE}\n${content}`, 'utf8');
+    return { path, updated: true };
+  }
+  return { updated: false };
+}
 
 function envExampleTemplate(): string {
   return `# @interview-sdk/server signs each evaluation with this so a stored/displayed
@@ -126,5 +157,22 @@ export async function scaffoldServerRoute(
   await writeFile(targetPath, template.content(), 'utf8');
   await writeFile(envExamplePath, envExampleTemplate(), 'utf8');
 
-  return { filesWritten: [targetPath, envExamplePath] };
+  const filesWritten = [targetPath, envExamplePath];
+  const warnings: string[] = [];
+
+  // Only the nextjs framework has an HTML/CSS layer at all — the plain
+  // Node server template is a headless API, with no @interview-sdk/react
+  // usage to style in the first place.
+  if (framework === 'nextjs') {
+    const stylesheet = await ensureStylesheetImport(dir);
+    if (stylesheet.updated && stylesheet.path) {
+      filesWritten.push(stylesheet.path);
+    } else if (!stylesheet.path) {
+      warnings.push(
+        `Could not find app/layout.tsx (or src/app/layout.tsx) to add the required stylesheet import automatically. Add this once, in your root layout: ${STYLESHEET_IMPORT_LINE}`,
+      );
+    }
+  }
+
+  return { filesWritten, warnings };
 }
