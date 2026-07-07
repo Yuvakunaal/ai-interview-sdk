@@ -6,7 +6,7 @@
   "description": "Open-source TypeScript/React infrastructure for embedding AI-powered interviews into any application, with your own AI keys, backend, and database.",
   "license": "MIT",
   "engines": {
-    "node": ">=18.18.0"
+    "node": ">=20.19.0"
   },
   "scripts": {
     "build": "turbo run build",

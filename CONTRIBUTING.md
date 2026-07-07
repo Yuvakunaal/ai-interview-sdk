@@ -63,7 +63,7 @@ pnpm --filter @interview-sdk/core test
    without the change — see `packages/*/src/**/*.test.ts` for existing
    patterns.
 3. Run `pnpm lint && pnpm typecheck && pnpm test && pnpm build` before opening
-   a PR — CI runs the same four checks on Node 18/20/22.
+   a PR — CI runs the same four checks on Node 20/22.
 4. Add a changeset: `pnpm changeset`. Pick the affected package(s) and a
    semver bump (patch/minor/major) and describe the change from a consumer's
    point of view — this text becomes the changelog entry.
