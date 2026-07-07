@@ -71,7 +71,11 @@ export class FollowUpEngine {
       return { shouldGenerate: false, reason: 'no_answer_to_follow_up_on' };
     }
 
-    const missedConcepts = context.evaluation.conceptCoverage.filter((c) => !c.covered);
+    // A concept marked covered but only partial isn't fully explained — it
+    // counts as missed for follow-up purposes the same as an uncovered one.
+    const missedConcepts = context.evaluation.conceptCoverage.filter(
+      (c) => !c.covered || c.partial,
+    );
     if (
       missedConcepts.length === 0 &&
       context.evaluation.totalScore >= FULL_COVERAGE_SCORE_THRESHOLD
@@ -89,7 +93,7 @@ export class FollowUpEngine {
     }
 
     const missedConcepts = context.evaluation.conceptCoverage
-      .filter((c) => !c.covered)
+      .filter((c) => !c.covered || c.partial)
       .map((c) => c.concept);
 
     for (const concept of missedConcepts) {
@@ -108,6 +112,7 @@ export class FollowUpEngine {
         evaluation: context.evaluation,
         desiredDifficulty,
         missedConcepts,
+        askedFollowUps: context.askedFollowUps,
       });
       const response = await adapter.complete(request);
       const parsed = parseAdapterJson(response.text, followUpResponseSchema);

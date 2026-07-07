@@ -23,8 +23,6 @@ export class RubricValidationError extends InterviewSdkError {
   }
 }
 
-export class DuplicateSubmissionError extends InterviewSdkError {}
-
 /**
  * The raw (untrimmed) answer text exceeded the hard length cap enforced
  * before any AI call is made. Distinct from the `very_long_answer`

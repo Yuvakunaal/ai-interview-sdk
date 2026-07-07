@@ -3,6 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MicButton, type AudioRecorder } from './MicButton.js';
 
+function fakeRecorderWithStream(audio: Blob, stopTrack: () => void): AudioRecorder {
+  return {
+    stop: vi.fn(async () => audio),
+    stream: { getTracks: () => [{ stop: stopTrack }] } as unknown as MediaStream,
+  };
+}
+
 function fakeRecorder(audio: Blob): AudioRecorder {
   return { stop: vi.fn(async () => audio) };
 }
@@ -173,6 +180,27 @@ describe('MicButton', () => {
     await waitFor(() => expect(onTranscript).toHaveBeenCalledWith('a hash map uses buckets'));
     expect(stopTrack).toHaveBeenCalledTimes(1);
     expect(transcribe.mock.calls[0]![0]).toBeInstanceOf(Blob);
+  });
+
+  it('stops the live mic stream if the button unmounts while still recording (e.g. Pause mid-answer)', async () => {
+    const user = userEvent.setup();
+    const stopTrack = vi.fn();
+    const createRecorder = vi.fn(async () =>
+      fakeRecorderWithStream(new Blob(['audio']), stopTrack),
+    );
+    const { unmount } = render(
+      <MicButton transcribe={vi.fn()} onTranscript={vi.fn()} createRecorder={createRecorder} />,
+    );
+
+    await user.click(screen.getByRole('button'));
+    expect(screen.getByRole('button', { name: 'Stop recording' })).toBeInTheDocument();
+
+    // The candidate pauses (or the widget otherwise unmounts this control)
+    // mid-recording, without ever clicking "Stop recording" — the mic must
+    // not stay hot indefinitely just because no explicit stop happened.
+    unmount();
+
+    expect(stopTrack).toHaveBeenCalledTimes(1);
   });
 
   it('reports an error when the browser has no mediaDevices support', async () => {

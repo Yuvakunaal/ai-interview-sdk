@@ -1,9 +1,11 @@
-import { ElevenLabsClient, ElevenLabsError } from '@elevenlabs/elevenlabs-js';
+import { ElevenLabsClient, ElevenLabsError, ElevenLabsTimeoutError } from '@elevenlabs/elevenlabs-js';
 import {
   ProviderAuthError,
+  ProviderConnectionError,
   ProviderInvalidRequestError,
   ProviderOverloadedError,
   ProviderRateLimitError,
+  ProviderTimeoutError,
   type SynthesisResult,
   type TranscriptResult,
   type VoiceProviderAdapter,
@@ -31,13 +33,30 @@ const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // "Rachel" — ElevenLabs' wid
 const DEFAULT_TTS_MODEL = 'eleven_multilingual_v2';
 const DEFAULT_STT_MODEL = 'scribe_v2';
 
+/** Parses a Retry-After header (seconds, or an HTTP date) into milliseconds. */
+function parseRetryAfterMs(headers: Headers | undefined): number | undefined {
+  const value = headers?.get('retry-after');
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return seconds * 1000;
+  const dateMs = Date.parse(value);
+  return Number.isFinite(dateMs) ? Math.max(0, dateMs - Date.now()) : undefined;
+}
+
 async function drainStream(stream: ReadableStream<Uint8Array>): Promise<ArrayBuffer> {
   const chunks: Uint8Array[] = [];
   const reader = stream.getReader();
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (value) chunks.push(value);
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) chunks.push(value);
+    }
+  } finally {
+    // A connection drop mid-TTS throws out of the loop above — without
+    // this, the reader lock is never released and the stream never
+    // cancelled, leaking the resource.
+    reader.releaseLock();
   }
 
   const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
@@ -103,6 +122,10 @@ export class ElevenLabsAdapter implements VoiceProviderAdapter {
   }
 
   private normalizeError(error: unknown): Error {
+    // Thrown as its own distinct class, never wrapped in ElevenLabsError.
+    if (error instanceof ElevenLabsTimeoutError) {
+      return new ProviderTimeoutError(error.message, this.id, { cause: error });
+    }
     if (!(error instanceof ElevenLabsError)) {
       return error instanceof Error ? error : new Error(String(error));
     }
@@ -112,10 +135,20 @@ export class ElevenLabsAdapter implements VoiceProviderAdapter {
       return new ProviderAuthError(error.message, this.id, { cause: error });
     }
     if (status === 429) {
-      return new ProviderRateLimitError(error.message, this.id, undefined, { cause: error });
+      return new ProviderRateLimitError(
+        error.message,
+        this.id,
+        parseRetryAfterMs(error.rawResponse?.headers),
+        { cause: error },
+      );
     }
     if (status !== undefined && status >= 500) {
       return new ProviderOverloadedError(error.message, this.id, { cause: error });
+    }
+    if (status === undefined) {
+      // A genuine network failure (not an HTTP error response) is still
+      // wrapped in ElevenLabsError, but with no statusCode at all.
+      return new ProviderConnectionError(error.message, this.id, { cause: error });
     }
     return new ProviderInvalidRequestError(error.message, this.id, { cause: error });
   }

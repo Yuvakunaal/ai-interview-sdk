@@ -289,6 +289,58 @@ describe('useInterview', () => {
     expect(result.current.currentQuestion?.id).toBe('q2');
   });
 
+  it('does not crash when resuming a session that expired while paused', () => {
+    vi.useFakeTimers();
+    try {
+      const processor = fakeProcessor([{ evaluation: evaluation() }]);
+      const { result } = renderHook(() =>
+        useInterview({ questions, rubric, processor, sessionTimeoutMs: 1000 }),
+      );
+
+      act(() => result.current.start());
+      act(() => result.current.pause());
+      expect(result.current.status).toBe('paused');
+
+      vi.advanceTimersByTime(2000);
+
+      // The flow engine deliberately throws SessionExpiredError from
+      // resume() on an expired session — the hook must catch it and turn it
+      // into visible state, not let it escape as an uncaught synchronous
+      // throw from an event-handler callback (which no error boundary can
+      // catch).
+      expect(() => {
+        act(() => result.current.resume());
+      }).not.toThrow();
+
+      expect(result.current.status).toBe('expired');
+      expect(result.current.error).toBeInstanceOf(Error);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not leave an unhandled rejection when submitting an answer after the session has expired', async () => {
+    vi.useFakeTimers();
+    try {
+      const processor = fakeProcessor([{ evaluation: evaluation() }]);
+      const { result } = renderHook(() =>
+        useInterview({ questions, rubric, processor, sessionTimeoutMs: 1000 }),
+      );
+
+      act(() => result.current.start());
+      vi.advanceTimersByTime(2000);
+
+      await act(async () => {
+        await result.current.submitAnswer('too late');
+      });
+
+      expect(result.current.status).toBe('expired');
+      expect(result.current.error).toBeInstanceOf(Error);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('preserves the already-scored answer in the final report if the interview ends instead of resuming', async () => {
     let resolveScoring!: (value: ProcessAnswerResult) => void;
     const processor: InterviewProcessor = {

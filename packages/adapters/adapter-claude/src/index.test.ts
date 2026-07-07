@@ -111,6 +111,22 @@ describe('ClaudeAdapter', () => {
     await expect(adapter.complete(request)).rejects.toThrow(ProviderRateLimitError);
   });
 
+  it("carries the provider's real Retry-After header into retryAfterMs, instead of discarding it", async () => {
+    const create = vi.fn(async (_params: unknown) => {
+      throw new Anthropic.RateLimitError(
+        429,
+        { type: 'rate_limit_error' },
+        'rate limited',
+        new Headers({ 'retry-after': '30' }),
+      );
+    });
+    const adapter = new ClaudeAdapter({ client: fakeClient(create) });
+
+    await expect(adapter.complete(request)).rejects.toMatchObject({
+      retryAfterMs: 30_000,
+    });
+  });
+
   it('normalizes an authentication error', async () => {
     const create = vi.fn(async (_params: unknown) => {
       throw new Anthropic.AuthenticationError(

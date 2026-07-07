@@ -1,10 +1,12 @@
 import { ApiError, GoogleGenAI } from '@google/genai';
 import {
   ProviderAuthError,
+  ProviderConnectionError,
   ProviderContextLengthExceededError,
   ProviderInvalidRequestError,
   ProviderOverloadedError,
   ProviderRateLimitError,
+  ProviderTimeoutError,
   type AIMessage,
   type AIProviderAdapter,
   type CompletionRequest,
@@ -89,6 +91,17 @@ export class GeminiAdapter implements AIProviderAdapter {
 
   private normalizeError(error: unknown): Error {
     if (!(error instanceof ApiError)) {
+      // Unlike OpenAI/Claude's SDKs, @google/genai never wraps a raw fetch
+      // failure in a typed error — a real DNS/connection failure or an
+      // aborted/timed-out request reaches here as a plain runtime error, not
+      // an ApiError. Left unclassified, withRetry() won't retry it and
+      // FailoverAdapter won't fail over on it, unlike the other adapters.
+      if (error instanceof Error && error.name === 'AbortError') {
+        return new ProviderTimeoutError(error.message, this.id, { cause: error });
+      }
+      if (error instanceof TypeError) {
+        return new ProviderConnectionError(error.message, this.id, { cause: error });
+      }
       return error instanceof Error ? error : new Error(String(error));
     }
 

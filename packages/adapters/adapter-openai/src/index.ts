@@ -23,6 +23,16 @@ export interface OpenAIAdapterConfig {
 const DEFAULT_MODEL = 'gpt-5.4-mini';
 const CONTEXT_LENGTH_PATTERN = /context length|maximum context|too long|token limit/i;
 
+/** Parses a Retry-After header (seconds, or an HTTP date) into milliseconds. */
+function parseRetryAfterMs(headers: Headers | undefined): number | undefined {
+  const value = headers?.get('retry-after');
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return seconds * 1000;
+  const dateMs = Date.parse(value);
+  return Number.isFinite(dateMs) ? Math.max(0, dateMs - Date.now()) : undefined;
+}
+
 function toResponsesInput(
   messages: AIMessage[],
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
@@ -66,7 +76,12 @@ export class OpenAIAdapter implements AIProviderAdapter {
 
   private normalizeError(error: unknown): Error {
     if (error instanceof OpenAI.RateLimitError) {
-      return new ProviderRateLimitError(error.message, this.id, undefined, { cause: error });
+      return new ProviderRateLimitError(
+        error.message,
+        this.id,
+        parseRetryAfterMs(error.headers),
+        { cause: error },
+      );
     }
     if (
       error instanceof OpenAI.AuthenticationError ||

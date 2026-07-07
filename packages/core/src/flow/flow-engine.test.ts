@@ -13,6 +13,19 @@ describe('InterviewFlowEngine construction', () => {
     expect(() => new InterviewFlowEngine({ questions: [] })).toThrow(ConfigValidationError);
   });
 
+  it('fails loud on a blank question id, matching validateInterviewConfig, instead of silently accepting it', () => {
+    // validateInterviewConfig (config/validate-config.ts) already rejects a
+    // blank id, but that check isn't shared — constructing the engine
+    // directly (bypassing that validator, e.g. from a headless caller)
+    // let a blank id through, becoming a real turn/follow-up-map key.
+    expect(() => new InterviewFlowEngine({ questions: [{ id: '', prompt: 'A' }] })).toThrow(
+      ConfigValidationError,
+    );
+    expect(() => new InterviewFlowEngine({ questions: [{ id: '   ', prompt: 'A' }] })).toThrow(
+      ConfigValidationError,
+    );
+  });
+
   it('fails loud on duplicate question ids', () => {
     expect(
       () =>
@@ -23,6 +36,20 @@ describe('InterviewFlowEngine construction', () => {
           ],
         }),
     ).toThrow(/Duplicate question id/);
+  });
+
+  it('fails loud on an invalid sessionTimeoutMs instead of silently misbehaving', () => {
+    // A negative value would otherwise expire the session almost
+    // immediately (Date.now() - updatedAt > a negative number is true right
+    // away); this must be caught by the engine itself, not only by the
+    // separate validateInterviewConfig, which a direct/headless caller can
+    // bypass.
+    expect(() => new InterviewFlowEngine({ questions, sessionTimeoutMs: -1 })).toThrow(
+      ConfigValidationError,
+    );
+    expect(() => new InterviewFlowEngine({ questions, sessionTimeoutMs: Number.NaN })).toThrow(
+      ConfigValidationError,
+    );
   });
 });
 

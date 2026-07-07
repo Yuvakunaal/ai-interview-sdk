@@ -63,6 +63,32 @@ describe('InterviewWidget', () => {
     consoleError.mockRestore();
   });
 
+  it('does not crash outside the error boundary when questions contains a circular reference', () => {
+    // The boundary's resetKey is computed via JSON.stringify(questions, rubric, ...)
+    // in the outer InterviewWidget, before the boundary itself renders. A
+    // circular reference in caller-supplied questions/rubric (a plausible
+    // authoring mistake in a live question builder) must not throw
+    // unguarded here — that's exactly the class of crash the boundary
+    // exists to prevent, and this specific computation sits outside it.
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const adapter = fakeAdapter(['{}']);
+    const circularQuestion: Record<string, unknown> = { id: 'q1', prompt: 'Explain hash maps.' };
+    circularQuestion.self = circularQuestion;
+
+    expect(() =>
+      render(
+        <InterviewWidget
+          questions={[circularQuestion as unknown as Question]}
+          rubric={rubric}
+          mode="client"
+          adapter={adapter}
+        />,
+      ),
+    ).not.toThrow();
+
+    consoleError.mockRestore();
+  });
+
   it('refuses to run Client Mode under NODE_ENV=production without the override flag', () => {
     vi.stubEnv('NODE_ENV', 'production');
     const adapter = fakeAdapter(['{}']);
@@ -216,6 +242,40 @@ describe('InterviewWidget', () => {
     expect(adapter.complete).not.toHaveBeenCalled();
   });
 
+  it('shows a clear expired-session message instead of crashing when Resume is clicked after the timeout elapses', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime, delay: null });
+    try {
+      const adapter = fakeAdapter(['{}']);
+      render(
+        <InterviewWidget
+          questions={questions}
+          rubric={rubric}
+          mode="client"
+          adapter={adapter}
+          sessionTimeoutMs={1000}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: 'Start interview' }));
+      await user.click(screen.getByRole('button', { name: 'Pause' }));
+      expect(screen.getByRole('button', { name: 'Resume' })).toBeInTheDocument();
+
+      vi.advanceTimersByTime(2000);
+
+      // Before the fix, flow.resume() throws SessionExpiredError
+      // synchronously from this onClick handler — a React error boundary
+      // never catches event-handler exceptions, so this used to take the
+      // whole widget down to a blank page instead of showing any message.
+      await user.click(screen.getByRole('button', { name: 'Resume' }));
+
+      expect(screen.getByRole('heading', { name: /timed out/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Resume' })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('runs in Server Mode by POSTing to the configured endpoint', async () => {
     const user = userEvent.setup();
     const fetchImpl = vi.fn(
@@ -287,6 +347,47 @@ describe('InterviewWidget', () => {
     await user.click(screen.getByRole('button', { name: 'Start interview' }));
 
     await waitFor(() => expect(synthesize).toHaveBeenCalledWith('Explain hash maps.'));
+
+    playSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('speaks every question in the interview aloud, not just the first one', async () => {
+    const user = userEvent.setup();
+    const playSpy = vi
+      .spyOn(window.HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined);
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:fake-url'),
+      revokeObjectURL: vi.fn(),
+    });
+    const adapter = fakeAdapter(['{}']);
+    const synthesize = vi.fn(async () => ({
+      audio: new ArrayBuffer(4),
+      mimeType: 'audio/mpeg',
+    }));
+
+    render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        synthesize={synthesize}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Explain binary search.' })).toBeInTheDocument(),
+    );
+    await waitFor(() => expect(synthesize).toHaveBeenLastCalledWith('Explain binary search.'));
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(2));
 
     playSpy.mockRestore();
     vi.unstubAllGlobals();

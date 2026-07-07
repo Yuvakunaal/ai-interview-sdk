@@ -101,9 +101,28 @@ describe('startDashboardServer', () => {
     expect(response.status).toBe(404);
   });
 
+  it('binds to localhost only, not all network interfaces', async () => {
+    // No host argument on .listen() binds 0.0.0.0/:: by default — reachable
+    // from other machines on the same network — even though the printed
+    // URL ("http://localhost:<port>/") implies this is local-only.
+    const { server, port } = await startDashboardServer({ assetsDir: dir, port: 0 });
+    handles.push(server);
+
+    const address = server.address();
+    expect(typeof address === 'object' && address ? address.address : undefined).toBe(
+      '127.0.0.1',
+    );
+
+    const response = await fetch(`http://127.0.0.1:${port}/`);
+    expect(response.status).toBe(200);
+  });
+
   it('retries on the next port when the requested one is already in use', async () => {
     const blocker = createServer(() => {});
-    await new Promise<void>((resolve) => blocker.listen(0, resolve));
+    // Must bind the same host (127.0.0.1) startDashboardServer now binds —
+    // otherwise this doesn't actually collide and the retry path never
+    // triggers.
+    await new Promise<void>((resolve) => blocker.listen(0, '127.0.0.1', resolve));
     const address = blocker.address();
     const busyPort = typeof address === 'object' && address ? address.port : 0;
     handles.push(blocker);
@@ -112,7 +131,12 @@ describe('startDashboardServer', () => {
     handles.push(server);
 
     expect(port).not.toBe(busyPort);
-    const response = await fetch(`http://localhost:${port}/`);
+    // 127.0.0.1, not "localhost" — Node's fetch/undici has a known quirk
+    // where reusing "localhost" right after a failed listen() attempt on
+    // the same port can corrupt its connection state; unrelated to the
+    // server itself, which is confirmed reachable via its actual bound
+    // address (127.0.0.1, see the binding test above).
+    const response = await fetch(`http://127.0.0.1:${port}/`);
     expect(response.status).toBe(200);
   });
 });

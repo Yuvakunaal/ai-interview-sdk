@@ -7,6 +7,7 @@ export interface BuildFollowUpRequestInput {
   evaluation: EvaluationResult;
   desiredDifficulty: 'easier' | 'same' | 'harder';
   missedConcepts: string[];
+  askedFollowUps: string[];
 }
 
 const RESPONSE_SHAPE_INSTRUCTIONS = `Respond with ONLY a single JSON object, no prose, matching this shape:
@@ -34,8 +35,12 @@ export function buildFollowUpRequest(input: BuildFollowUpRequestInput): Completi
         )}. Prefer probing one of these.`
       : 'The candidate covered the expected concepts — ask a deeper or broader follow-up.',
     `Make the follow-up ${input.desiredDifficulty} relative to the original question.`,
+    input.askedFollowUps.length > 0
+      ? 'Follow-ups already asked in this thread — do not repeat or closely rephrase any of ' +
+          `these, ask something genuinely new instead: ${JSON.stringify(input.askedFollowUps)}`
+      : undefined,
     RESPONSE_SHAPE_INSTRUCTIONS,
-  ];
+  ].filter((part): part is string => Boolean(part));
 
   const messages: AIMessage[] = [
     { role: 'system', content: systemParts.join('\n\n') },

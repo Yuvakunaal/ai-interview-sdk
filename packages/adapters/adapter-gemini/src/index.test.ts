@@ -1,10 +1,12 @@
 import { ApiError, type GoogleGenAI } from '@google/genai';
 import {
   ProviderAuthError,
+  ProviderConnectionError,
   ProviderContextLengthExceededError,
   ProviderInvalidRequestError,
   ProviderOverloadedError,
   ProviderRateLimitError,
+  ProviderTimeoutError,
   type CompletionRequest,
 } from '@interview-sdk/core';
 import { describe, expect, it, vi } from 'vitest';
@@ -176,6 +178,29 @@ describe('GeminiAdapter', () => {
     const adapter = new GeminiAdapter({ client: fakeClient(generateContent) });
 
     await expect(adapter.complete(request)).rejects.toThrow(ProviderInvalidRequestError);
+  });
+
+  it('normalizes a raw fetch-level connection failure as a connection error, so withRetry/failover trigger like they do for OpenAI/Claude', async () => {
+    // @google/genai does not wrap network-level fetch failures in its own
+    // ApiError class — a real DNS/connection failure from Node's undici
+    // fetch surfaces as a plain TypeError, never `instanceof ApiError`.
+    const generateContent = vi.fn(async (_p: unknown) => {
+      throw new TypeError('fetch failed', { cause: new Error('ECONNREFUSED') });
+    });
+    const adapter = new GeminiAdapter({ client: fakeClient(generateContent) });
+
+    await expect(adapter.complete(request)).rejects.toThrow(ProviderConnectionError);
+  });
+
+  it('normalizes an aborted (timed-out) request as a timeout error', async () => {
+    // Native fetch (and Node's AbortSignal.timeout()) reject an aborted
+    // request with a DOMException named "AbortError" — also not an ApiError.
+    const generateContent = vi.fn(async (_p: unknown) => {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    });
+    const adapter = new GeminiAdapter({ client: fakeClient(generateContent) });
+
+    await expect(adapter.complete(request)).rejects.toThrow(ProviderTimeoutError);
   });
 
   it('passes through a non-Gemini error unchanged', async () => {

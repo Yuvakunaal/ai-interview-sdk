@@ -91,6 +91,12 @@ export function QuestionAudio({
     // always "succeeds" and would wrongly mark hasPlayedOnce before the
     // real autoplay attempt (once the element actually exists) ever runs.
     if (status !== 'ready' || !autoPlay || !audioEl) return;
+    // Always start from the beginning — matters once a caller's own replay
+    // logic (or this same effect re-firing for any reason) targets an
+    // element that already reached the end: play() from an end-of-track
+    // position produces no audible sound at all.
+    // eslint-disable-next-line react-hooks/immutability -- a real DOM element's own playback position, not application state; audioEl is only state-backed for the level-meter hook's reactivity (see the field comment above)
+    audioEl.currentTime = 0;
     // Wrapped in Promise.resolve(): most browsers return a Promise from
     // play(), but older Safari can return undefined instead — treat that as
     // playback having started, same as it does natively.
@@ -107,7 +113,13 @@ export function QuestionAudio({
   if (status === 'error') return null;
 
   const play = () => {
-    Promise.resolve(audioEl?.play())
+    if (!audioEl) return;
+    // "Replay question" after the track already ended must rewind first —
+    // otherwise play() just resumes from the end-of-track position and
+    // produces no audible sound, even though playback technically "works".
+    // eslint-disable-next-line react-hooks/immutability -- a real DOM element's own playback position, not application state
+    audioEl.currentTime = 0;
+    Promise.resolve(audioEl.play())
       .then(() => setHasPlayedOnce(true))
       .catch((error: unknown) =>
         onError?.(error instanceof Error ? error : new Error(String(error))),

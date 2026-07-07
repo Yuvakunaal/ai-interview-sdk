@@ -65,4 +65,13 @@ describe('LiveSignals', () => {
     render(<LiveSignals rubric={rubric} transcript={[entry({ technical: 140 })]} />);
     expect(screen.getByLabelText('Technical depth: 100 out of 100')).toBeInTheDocument();
   });
+
+  it('announces new scores to screen readers via a live region, matching TranscriptChat', () => {
+    const { container } = render(
+      <LiveSignals rubric={rubric} transcript={[entry({ technical: 87, clarity: 91 })]} />,
+    );
+    const region = container.querySelector('.isdk-live-signals');
+    expect(region).toHaveAttribute('role', 'log');
+    expect(region).toHaveAttribute('aria-live', 'polite');
+  });
 });

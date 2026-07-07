@@ -108,6 +108,22 @@ describe('OpenAIAdapter', () => {
     await expect(adapter.complete(request)).rejects.toThrow(ProviderRateLimitError);
   });
 
+  it("carries the provider's real Retry-After header into retryAfterMs, instead of discarding it", async () => {
+    const create = vi.fn(async (_params: unknown) => {
+      throw new OpenAI.RateLimitError(
+        429,
+        { message: 'rate limited' },
+        undefined,
+        new Headers({ 'retry-after': '30' }),
+      );
+    });
+    const adapter = new OpenAIAdapter({ client: fakeClient(create) });
+
+    await expect(adapter.complete(request)).rejects.toMatchObject({
+      retryAfterMs: 30_000,
+    });
+  });
+
   it('normalizes an authentication error', async () => {
     const create = vi.fn(async (_params: unknown) => {
       throw new OpenAI.AuthenticationError(

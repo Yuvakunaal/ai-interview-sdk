@@ -24,6 +24,16 @@ const DEFAULT_MODEL = 'claude-opus-4-8';
 const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
 const CONTEXT_LENGTH_PATTERN = /context length|too long|maximum context|prompt is too long/i;
 
+/** Parses a Retry-After header (seconds, or an HTTP date) into milliseconds. */
+function parseRetryAfterMs(headers: Headers | undefined): number | undefined {
+  const value = headers?.get('retry-after');
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return seconds * 1000;
+  const dateMs = Date.parse(value);
+  return Number.isFinite(dateMs) ? Math.max(0, dateMs - Date.now()) : undefined;
+}
+
 function toAnthropicMessages(messages: AIMessage[]): {
   system: string;
   messages: Anthropic.MessageParam[];
@@ -89,7 +99,12 @@ export class ClaudeAdapter implements AIProviderAdapter {
 
   private normalizeError(error: unknown): Error {
     if (error instanceof Anthropic.RateLimitError) {
-      return new ProviderRateLimitError(error.message, this.id, undefined, { cause: error });
+      return new ProviderRateLimitError(
+        error.message,
+        this.id,
+        parseRetryAfterMs(error.headers),
+        { cause: error },
+      );
     }
     if (
       error instanceof Anthropic.AuthenticationError ||

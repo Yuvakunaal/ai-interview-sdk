@@ -29,7 +29,7 @@ other than the current working directory.
 ## `dashboard` — customize your interview and copy the code
 
 ```bash
-npx interview-sdk dashboard [--port 4949]
+npx interview-sdk dashboard [--port 4949] [--host 127.0.0.1]
 ```
 
 Starts a local static server (no build step of your own, no network calls
@@ -38,7 +38,9 @@ mode (voice/hybrid/typed), difficulty, timebox, and follow-ups against a
 live `<InterviewWidget>` preview (a local mock adapter — no API keys, no
 real AI call), then switch to the **Code** tab and copy the exact,
 Server-Mode-recommended integration code into your own app. Picks the next
-free port automatically if the default is in use. Press Ctrl+C to stop.
+free port automatically if the default is in use. Binds to `127.0.0.1`
+(localhost-only) by default — pass `--host` only if you deliberately want
+to reach it from another device on your own network. Press Ctrl+C to stop.
 
 ## `simulate` — the Interview Simulator
 

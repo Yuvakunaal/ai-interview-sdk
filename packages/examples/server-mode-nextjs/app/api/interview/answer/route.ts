@@ -10,6 +10,10 @@ const processor = new ServerAnswerProcessor({
   rubric,
   adapter: createMockAdapter(),
   signingSecret: process.env.INTERVIEW_SIGNING_SECRET,
+  // Must match the client's maxFollowUpDepth (app/page.tsx) — otherwise the
+  // server could decide to generate a follow-up the client's own flow
+  // engine will then reject for exceeding its configured depth.
+  followUpConfig: { maxDepth: 1 },
 });
 
 export const POST = createInterviewAnswerHandler(processor, {

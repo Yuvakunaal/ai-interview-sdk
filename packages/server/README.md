@@ -134,6 +134,15 @@ pnpm --filter @interview-sdk/server test:coverage
 
 ## Not yet implemented
 
+- **No authentication or rate-limiting**: `createInterviewAnswerHandler`
+  accepts and processes any request that reaches it, with no built-in caller
+  identity check or request throttling. Every request results in a real,
+  billed call to your AI provider — an unauthenticated, unthrottled route is
+  a direct cost-based denial-of-service vector, not just a data-integrity
+  concern. Put this handler behind your own auth middleware and a rate
+  limiter (per-session or per-IP) before exposing it publicly; this package
+  intentionally holds no auth/session store of its own (Zero-Infra
+  Guarantee).
 - No built-in session-hijacking prevention: the processor trusts the
   request's `previousTurns`/`currentFollowUpDepth`/`askedFollowUps` fields
   as sent. For stronger guarantees, verify these against your own persisted

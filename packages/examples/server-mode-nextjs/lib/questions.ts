@@ -3,17 +3,23 @@ import type { Question, RubricDimensionInput } from '@interview-sdk/core';
 export const questions: Question[] = [
   {
     id: 'q1',
-    prompt: 'How would you design a URL shortener?',
-    concepts: ['hashing', 'collision handling', 'datastore'],
+    prompt: 'How does a hash map resolve collisions in a production system?',
+    concepts: ['hashing', 'collision resolution'],
   },
   {
     id: 'q2',
-    prompt: 'Explain how React decides whether to re-render a component.',
-    concepts: ['virtual dom', 'reconciliation', 'state'],
+    prompt: 'What happens to a React component when state changes?',
+    concepts: ['re-render', 'virtual dom'],
+  },
+  {
+    id: 'q3',
+    prompt: 'Describe one trade-off you would make when designing a reliable API.',
+    concepts: ['trade-offs', 'reliability'],
   },
 ];
 
 export const rubric: RubricDimensionInput[] = [
-  { id: 'technical', label: 'Technical depth', weight: 3 },
+  { id: 'technical', label: 'Technical accuracy', weight: 3 },
   { id: 'communication', label: 'Communication clarity', weight: 1 },
+  { id: 'systems', label: 'Systems thinking', weight: 2 },
 ];

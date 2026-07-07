@@ -106,7 +106,20 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
   }, [flow]);
 
   const resume = useCallback(() => {
-    const nextState = flow.resume();
+    // flow.resume() deliberately throws SessionExpiredError once the
+    // timeout has elapsed while paused — a real, expected outcome, not a
+    // bug in the engine. It must be caught here: this runs synchronously
+    // inside an onClick handler, and React error boundaries never catch
+    // event-handler exceptions, so an unguarded throw would crash the
+    // whole widget instead of surfacing a recoverable message.
+    let nextState: SessionState;
+    try {
+      nextState = flow.resume();
+    } catch (caught) {
+      setFlowState(flow.getState());
+      setError(caught instanceof Error ? caught : new Error(String(caught)));
+      return;
+    }
     setFlowState(nextState);
     if (nextState.status === 'in_progress' && deferredTransitionRef.current) {
       const applyDeferredTransition = deferredTransitionRef.current;
@@ -199,7 +212,19 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
       if (isProcessing) return;
 
       const beforeCount = flow.getState().answers.length;
-      const nextState = flow.submitAnswer({ text, ...opts });
+      // flow.submitAnswer() throws SessionExpiredError/InterviewSdkError for
+      // real, expected states (session expired mid-question, submitting
+      // outside "in_progress"). Left unguarded, this rejects a promise
+      // nobody awaits (onSubmit={(text) => void interview.submitAnswer(text)}),
+      // producing a silent unhandled rejection instead of visible feedback.
+      let nextState: SessionState;
+      try {
+        nextState = flow.submitAnswer({ text, ...opts });
+      } catch (caught) {
+        setFlowState(flow.getState());
+        setError(caught instanceof Error ? caught : new Error(String(caught)));
+        return;
+      }
       setFlowState(nextState);
 
       if (nextState.answers.length === beforeCount) {

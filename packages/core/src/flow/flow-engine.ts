@@ -37,13 +37,24 @@ function validateQuestions(questions: Question[]): void {
   }
   const seenIds = new Set<string>();
   for (const question of questions ?? []) {
-    if (seenIds.has(question.id)) {
+    if (typeof question.id !== 'string' || question.id.trim() === '') {
+      issues.push('A question is missing an id.');
+    } else if (seenIds.has(question.id)) {
       issues.push(`Duplicate question id: "${question.id}".`);
     } else {
       seenIds.add(question.id);
     }
   }
   if (issues.length > 0) throw new ConfigValidationError(issues);
+}
+
+function validateSessionTimeout(sessionTimeoutMs: number | undefined): void {
+  if (sessionTimeoutMs === undefined) return;
+  if (!Number.isFinite(sessionTimeoutMs) || sessionTimeoutMs <= 0) {
+    throw new ConfigValidationError([
+      `Invalid sessionTimeoutMs: "${sessionTimeoutMs}". Must be a positive number.`,
+    ]);
+  }
 }
 
 export class InterviewFlowEngine {
@@ -55,6 +66,7 @@ export class InterviewFlowEngine {
 
   constructor(config: FlowEngineConfig) {
     validateQuestions(config.questions);
+    validateSessionTimeout(config.sessionTimeoutMs);
     this.questions = config.questions;
     this.maxFollowUpDepth = config.maxFollowUpDepth ?? 2;
     this.sessionTimeoutMs = config.sessionTimeoutMs;

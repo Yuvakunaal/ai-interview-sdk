@@ -15,7 +15,7 @@ const HELP_TEXT = `${CLI_PACKAGE_NAME}@${CLI_PACKAGE_VERSION}
 
 Usage:
   interview-sdk init [--framework nextjs|node] [--dir <path>] [--force]
-  interview-sdk dashboard [--port <n>]
+  interview-sdk dashboard [--port <n>] [--host <address>]
   interview-sdk simulate --config <path> [--persona <id,id,...>] [--json]
   interview-sdk bias-harness --config <path> --samples <path> [--runs <n>] [--variance-threshold <n>] [--json]
   interview-sdk pack validate <file>
@@ -100,10 +100,12 @@ async function runDashboardCommand(args: string[]): Promise<number> {
     args,
     options: {
       port: { type: 'string' },
+      host: { type: 'string' },
     },
   });
   await runDashboard({
     ...(values.port ? { port: parseNumberFlag('port', values.port) } : {}),
+    ...(values.host ? { host: values.host } : {}),
   });
   // Resolves as soon as the server starts listening — the process itself
   // stays alive because of the open server socket, exiting on Ctrl+C.

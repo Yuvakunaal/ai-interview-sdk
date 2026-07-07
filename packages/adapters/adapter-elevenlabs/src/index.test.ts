@@ -1,9 +1,15 @@
-import { ElevenLabsError, type ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
+import {
+  ElevenLabsError,
+  ElevenLabsTimeoutError,
+  type ElevenLabsClient,
+} from '@elevenlabs/elevenlabs-js';
 import {
   ProviderAuthError,
+  ProviderConnectionError,
   ProviderInvalidRequestError,
   ProviderOverloadedError,
   ProviderRateLimitError,
+  ProviderTimeoutError,
 } from '@interview-sdk/core';
 import { describe, expect, it, vi } from 'vitest';
 import { createElevenLabsAdapter, ElevenLabsAdapter } from './index.js';
@@ -48,6 +54,20 @@ describe('ElevenLabsAdapter', () => {
 
       expect(new Uint8Array(result.audio)).toEqual(new Uint8Array([1, 2, 3, 4, 5]));
       expect(result.mimeType).toBe('audio/mpeg');
+    });
+
+    it('releases the stream reader lock instead of leaking it when a read fails mid-stream', async () => {
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array([1, 2]));
+          controller.error(new Error('connection dropped'));
+        },
+      });
+      const convert = vi.fn(async (_voiceId: string, _params: unknown) => stream);
+      const adapter = new ElevenLabsAdapter({ client: fakeClient({ convert }) });
+
+      await expect(adapter.synthesize('Hello there')).rejects.toThrow('connection dropped');
+      expect(stream.locked).toBe(false);
     });
 
     it('passes the default voice id and model to the SDK', async () => {
@@ -143,6 +163,19 @@ describe('ElevenLabsAdapter', () => {
       await expect(adapter.transcribe(audio)).rejects.toThrow(ProviderRateLimitError);
     });
 
+    it("carries the provider's real Retry-After header into retryAfterMs, instead of discarding it", async () => {
+      const sttConvert = vi.fn(async (_params: unknown) => {
+        throw new ElevenLabsError({
+          message: 'rate limited',
+          statusCode: 429,
+          rawResponse: { headers: new Headers({ 'retry-after': '30' }) } as never,
+        });
+      });
+      const adapter = new ElevenLabsAdapter({ client: fakeClient({ sttConvert }) });
+
+      await expect(adapter.transcribe(audio)).rejects.toMatchObject({ retryAfterMs: 30_000 });
+    });
+
     it('normalizes a 5xx as an overloaded error', async () => {
       const sttConvert = vi.fn(async (_params: unknown) => {
         throw new ElevenLabsError({ message: 'server error', statusCode: 503 });
@@ -159,6 +192,32 @@ describe('ElevenLabsAdapter', () => {
       const adapter = new ElevenLabsAdapter({ client: fakeClient({ sttConvert }) });
 
       await expect(adapter.transcribe(audio)).rejects.toThrow(ProviderInvalidRequestError);
+    });
+
+    it("normalizes the SDK's own timeout error as a provider timeout error", async () => {
+      // The Fern-generated ElevenLabs SDK throws this distinct class on a
+      // request timeout — never wrapped in ElevenLabsError — so it must be
+      // checked separately from the statusCode-based branches below.
+      const sttConvert = vi.fn(async (_params: unknown) => {
+        throw new ElevenLabsTimeoutError('Timeout exceeded when calling POST /v1/speech-to-text.');
+      });
+      const adapter = new ElevenLabsAdapter({ client: fakeClient({ sttConvert }) });
+
+      await expect(adapter.transcribe(audio)).rejects.toThrow(ProviderTimeoutError);
+    });
+
+    it('normalizes a raw connection failure (ElevenLabsError with no statusCode) as a connection error', async () => {
+      // A genuine network failure (not an HTTP error response) is still
+      // wrapped in ElevenLabsError by the SDK, but with no statusCode — the
+      // existing status-based branches all fall through, so this used to
+      // land on the generic ProviderInvalidRequestError, mischaracterizing
+      // a transient network issue as a bad request.
+      const sttConvert = vi.fn(async (_params: unknown) => {
+        throw new ElevenLabsError({ message: 'fetch failed' });
+      });
+      const adapter = new ElevenLabsAdapter({ client: fakeClient({ sttConvert }) });
+
+      await expect(adapter.transcribe(audio)).rejects.toThrow(ProviderConnectionError);
     });
 
     it('passes through a non-ElevenLabs error unchanged', async () => {

@@ -117,6 +117,19 @@ describe('FollowUpEngine.decide', () => {
     expect(decision).toEqual({ shouldGenerate: false, reason: 'timed_out' });
   });
 
+  it('keeps probing when a concept is marked covered but only partially — partial coverage is not full coverage', () => {
+    const engine = new FollowUpEngine();
+    const decision = engine.decide(
+      baseContext({
+        evaluation: evaluation({
+          totalScore: 92,
+          conceptCoverage: [{ concept: 'hashing', covered: true, partial: true }],
+        }),
+      }),
+    );
+    expect(decision.shouldGenerate).toBe(true);
+  });
+
   it('stops once the answer fully covers all expected concepts with a high score', () => {
     const engine = new FollowUpEngine();
     const decision = engine.decide(
@@ -183,6 +196,26 @@ describe('FollowUpEngine.generate', () => {
     expect(systemMessage?.content).toContain('easier');
   });
 
+  it('treats a partially-covered concept as a missed concept worth targeting, not just fully-uncovered ones', async () => {
+    const engine = new FollowUpEngine();
+    const adapter = fakeAdapter(['Can you go deeper on collision resolution?']);
+
+    await engine.generate(
+      baseContext({
+        evaluation: evaluation({
+          totalScore: 92,
+          conceptCoverage: [{ concept: 'collision resolution', covered: true, partial: true }],
+        }),
+      }),
+      adapter,
+    );
+
+    const request = (adapter.complete as ReturnType<typeof vi.fn>).mock
+      .calls[0]?.[0] as CompletionRequest;
+    const systemMessage = request.messages.find((m) => m.role === 'system');
+    expect(systemMessage?.content).toContain('collision resolution');
+  });
+
   it('prefers a developer-defined branch over an AI call for a missed concept (branching logic)', async () => {
     const engine = new FollowUpEngine({
       branches: { hashing: 'What happens when two keys hash to the same bucket?' },
@@ -199,6 +232,27 @@ describe('FollowUpEngine.generate', () => {
     expect(result.source).toBe('branch');
     expect(result.prompt).toBe('What happens when two keys hash to the same bucket?');
     expect(adapter.complete).not.toHaveBeenCalled();
+  });
+
+  it('tells the AI what follow-ups have already been asked, instead of relying purely on blind post-hoc similarity retries', async () => {
+    const engine = new FollowUpEngine();
+    const adapter = fakeAdapter(['How would this scale to a distributed cache?']);
+
+    await engine.generate(
+      baseContext({
+        askedFollowUps: [
+          'Can you explain collision resolution in detail?',
+          'What happens on a hash collision?',
+        ],
+      }),
+      adapter,
+    );
+
+    const request = (adapter.complete as ReturnType<typeof vi.fn>).mock
+      .calls[0]?.[0] as CompletionRequest;
+    const systemMessage = request.messages.find((m) => m.role === 'system');
+    expect(systemMessage?.content).toContain('Can you explain collision resolution in detail?');
+    expect(systemMessage?.content).toContain('What happens on a hash collision?');
   });
 
   it('rejects a repeated follow-up and retries the adapter (repeat prevention + answer tracking)', async () => {

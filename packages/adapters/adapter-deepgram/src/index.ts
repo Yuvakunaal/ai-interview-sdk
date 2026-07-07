@@ -1,9 +1,11 @@
-import { DeepgramClient, DeepgramError } from '@deepgram/sdk';
+import { DeepgramClient, DeepgramError, DeepgramTimeoutError } from '@deepgram/sdk';
 import {
   ProviderAuthError,
+  ProviderConnectionError,
   ProviderInvalidRequestError,
   ProviderOverloadedError,
   ProviderRateLimitError,
+  ProviderTimeoutError,
   type SynthesisResult,
   type TranscriptResult,
   type VoiceProviderAdapter,
@@ -27,6 +29,16 @@ export interface DeepgramAdapterConfig {
 
 const DEFAULT_TRANSCRIBE_MODEL = 'nova-3';
 const DEFAULT_SPEAK_MODEL = 'aura-2-thalia-en';
+
+/** Parses a Retry-After header (seconds, or an HTTP date) into milliseconds. */
+function parseRetryAfterMs(headers: Headers | undefined): number | undefined {
+  const value = headers?.get('retry-after');
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return seconds * 1000;
+  const dateMs = Date.parse(value);
+  return Number.isFinite(dateMs) ? Math.max(0, dateMs - Date.now()) : undefined;
+}
 
 export class DeepgramAdapter implements VoiceProviderAdapter {
   readonly id = 'deepgram';
@@ -57,7 +69,13 @@ export class DeepgramAdapter implements VoiceProviderAdapter {
       }
 
       const transcript = response.results.channels[0]?.alternatives?.[0]?.transcript;
-      if (!transcript) {
+      // A present-but-empty transcript ("") is a real, legitimate result —
+      // silence/no speech detected — not an error; only a genuinely missing
+      // transcript field (a malformed/unexpected response shape) throws.
+      // adapter-elevenlabs already treats an equivalent empty-text response
+      // as success, so this must match rather than diverge for the same
+      // "candidate said nothing" condition.
+      if (typeof transcript !== 'string') {
         throw new ProviderInvalidRequestError(
           'Deepgram response contained no transcript.',
           this.id,
@@ -87,6 +105,10 @@ export class DeepgramAdapter implements VoiceProviderAdapter {
   }
 
   private normalizeError(error: unknown): Error {
+    // Thrown as its own distinct class, never wrapped in DeepgramError.
+    if (error instanceof DeepgramTimeoutError) {
+      return new ProviderTimeoutError(error.message, this.id, { cause: error });
+    }
     if (!(error instanceof DeepgramError)) {
       return error instanceof Error ? error : new Error(String(error));
     }
@@ -96,10 +118,20 @@ export class DeepgramAdapter implements VoiceProviderAdapter {
       return new ProviderAuthError(error.message, this.id, { cause: error });
     }
     if (status === 429) {
-      return new ProviderRateLimitError(error.message, this.id, undefined, { cause: error });
+      return new ProviderRateLimitError(
+        error.message,
+        this.id,
+        parseRetryAfterMs(error.rawResponse?.headers),
+        { cause: error },
+      );
     }
     if (status !== undefined && status >= 500) {
       return new ProviderOverloadedError(error.message, this.id, { cause: error });
+    }
+    if (status === undefined) {
+      // A genuine network failure (not an HTTP error response) is still
+      // wrapped in DeepgramError, but with no statusCode at all.
+      return new ProviderConnectionError(error.message, this.id, { cause: error });
     }
     return new ProviderInvalidRequestError(error.message, this.id, { cause: error });
   }

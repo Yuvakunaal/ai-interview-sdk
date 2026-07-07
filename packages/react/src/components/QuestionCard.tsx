@@ -1,5 +1,5 @@
 import type { SynthesisResult } from '@interview-sdk/core';
-import { useEffect, useId, useRef, useState, type RefObject } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { AudioLevelMeter } from './AudioLevelMeter.js';
 import { MicButton, type AudioRecorder } from './MicButton.js';
 import { QuestionAudio } from './QuestionAudio.js';
@@ -61,6 +61,13 @@ type VoiceTurn = 'ai_speaking' | 'candidate_turn';
  * it is generally not announced by assistive tech — only text *changing*
  * inside an already-present live region is. This element's text changing
  * on every prompt update is what actually reaches a screen reader.
+ *
+ * Focus itself is handled separately, inside the remounting QuestionCardBody
+ * below: every remount destroys whatever element previously held focus
+ * (e.g. the answer field), and without an explicit refocus the browser
+ * drops focus to <body> — forcing a keyboard-only candidate to Tab from the
+ * very top of the page after every single answer. Moving focus to the new
+ * heading each time (the standard multi-step-form pattern) fixes that.
  */
 export function QuestionCard(props: QuestionCardProps) {
   const { prompt, questionNumber, totalQuestions, isFollowUp } = props;
@@ -68,23 +75,12 @@ export function QuestionCard(props: QuestionCardProps) {
     ? `Follow-up: ${prompt}`
     : `Question ${questionNumber} of ${totalQuestions}: ${prompt}`;
 
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  // This wrapper mounts once per interview session — unlike QuestionCardBody
-  // below, it does NOT remount per question/follow-up — so this effect fires
-  // exactly once, the moment the interview view first replaces the lobby.
-  // Moving focus here (rather than every subsequent question) matches the
-  // live-region announcer above: frequent in-view updates get announced,
-  // the one big view transition gets focus moved to it.
-  useEffect(() => {
-    headingRef.current?.focus();
-  }, []);
-
   return (
     <>
       <p aria-live="polite" className="isdk-visually-hidden">
         {announcement}
       </p>
-      <QuestionCardBody key={prompt} {...props} headingRef={headingRef} />
+      <QuestionCardBody key={prompt} {...props} />
     </>
   );
 }
@@ -115,8 +111,7 @@ function QuestionCardBody({
   elapsedFraction,
   onPause,
   pauseDisabled = false,
-  headingRef,
-}: QuestionCardProps & { headingRef: RefObject<HTMLHeadingElement | null> }) {
+}: QuestionCardProps) {
   const [answerText, setAnswerText] = useState('');
   const [voiceTurn, setVoiceTurn] = useState<VoiceTurn>(() => (synthesize ? 'ai_speaking' : 'candidate_turn'));
   const [isRecording, setIsRecording] = useState(false);
@@ -126,6 +121,7 @@ function QuestionCardBody({
   const textareaId = useId();
   const promptId = useId();
   const isFirstRecordingRender = useRef(true);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     if (isFirstRecordingRender.current) {
@@ -135,6 +131,14 @@ function QuestionCardBody({
     onRecordingChange?.(isRecording);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- notify on isRecording transitions only, skipping the initial mount
   }, [isRecording]);
+
+  // This whole component remounts fresh per prompt (see QuestionCard above),
+  // so a plain mount-only effect fires again on every new question/follow-up
+  // — landing focus on the new heading each time, rather than leaving it
+  // dropped on <body> once the previously-focused element is destroyed.
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
 
   const isBusy = disabled || isSubmitting;
   const hasVoice = Boolean(synthesize || transcribe);

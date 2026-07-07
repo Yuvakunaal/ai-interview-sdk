@@ -63,9 +63,13 @@ export function resolveRequestedFile(assetsDir: string, requestUrl: string): str
   return resolved;
 }
 
+const DEFAULT_HOST = '127.0.0.1';
+
 export interface StartDashboardServerOptions {
   assetsDir: string;
   port?: number;
+  /** Defaults to 127.0.0.1 (localhost-only) — the printed URL implies local-only, so the server must actually bind there, not 0.0.0.0/:: (all interfaces) by omitting a host. */
+  host?: string;
 }
 
 export interface DashboardServerHandle {
@@ -77,6 +81,7 @@ export interface DashboardServerHandle {
 export function startDashboardServer({
   assetsDir,
   port = DEFAULT_PORT,
+  host = DEFAULT_HOST,
 }: StartDashboardServerOptions): Promise<DashboardServerHandle> {
   return new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
@@ -99,7 +104,7 @@ export function startDashboardServer({
       if (error.code === 'EADDRINUSE' && attempt < MAX_PORT_ATTEMPTS) {
         attempt += 1;
         currentPort += 1;
-        server.listen(currentPort);
+        server.listen(currentPort, host);
         return;
       }
       reject(error);
@@ -115,7 +120,7 @@ export function startDashboardServer({
       resolve({ server, port: boundPort });
     });
 
-    server.listen(currentPort);
+    server.listen(currentPort, host);
   });
 }
 
@@ -144,6 +149,8 @@ export function openBrowser(url: string): void {
 
 export interface RunDashboardOptions {
   port?: number;
+  /** Defaults to 127.0.0.1 (localhost-only). Only widen this deliberately (e.g. to reach the dashboard from another device on your own network). */
+  host?: string;
   /** Overrides the resolved static-assets directory; injectable for testing. */
   assetsDir?: string;
   /** Overrides the browser-opening step; injectable for testing (defaults to the real openBrowser). */
@@ -166,9 +173,10 @@ export async function runDashboard(options: RunDashboardOptions = {}): Promise<v
   const { port } = await startDashboardServer({
     assetsDir,
     ...(options.port ? { port: options.port } : {}),
+    ...(options.host ? { host: options.host } : {}),
   });
 
-  const url = `http://localhost:${port}/`;
+  const url = `http://${options.host ?? 'localhost'}:${port}/`;
   console.log(`Dashboard running at ${url}`);
   console.log('Press Ctrl+C to stop.');
   (options.openBrowser ?? openBrowser)(url);

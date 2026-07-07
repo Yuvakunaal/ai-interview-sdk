@@ -132,13 +132,24 @@ export function InterviewWidget(props: InterviewWidgetProps) {
   const shellClassName = ['isdk-widget', props.className].filter(Boolean).join(' ');
   // Lets the boundary auto-recover once the config it choked on actually
   // changes (the next keystroke fixing that blank prompt) instead of
-  // staying stuck on its fallback until something manually resets it.
-  const resetKey = JSON.stringify({
-    questions: props.questions,
-    rubric: props.rubric,
-    maxFollowUpDepth: props.maxFollowUpDepth,
-    sessionTimeoutMs: props.sessionTimeoutMs,
-  });
+  // staying stuck on its fallback until something manually resets it. This
+  // computation runs here, outside the boundary, so it must never throw
+  // itself — a circular reference in caller-supplied questions/rubric (a
+  // plausible authoring mistake) would otherwise crash synchronously before
+  // the boundary ever gets a chance to render its fallback. Auto-recovery
+  // simply won't fire for such a pathological config; the widget still
+  // renders instead of crashing, which is what actually matters here.
+  let resetKey: string;
+  try {
+    resetKey = JSON.stringify({
+      questions: props.questions,
+      rubric: props.rubric,
+      maxFollowUpDepth: props.maxFollowUpDepth,
+      sessionTimeoutMs: props.sessionTimeoutMs,
+    });
+  } catch {
+    resetKey = 'unserializable-config';
+  }
   return (
     <InterviewErrorBoundary shellClassName={shellClassName} resetKey={resetKey}>
       <InterviewWidgetInner {...props} />
@@ -231,6 +242,23 @@ function InterviewWidgetInner({
             rubric={normalizedRubric}
             {...(onExportError ? { onExportError } : {})}
           />
+        </div>
+      </div>
+    );
+  }
+
+  if (interview.status === 'expired') {
+    return (
+      <div className={`${shellClassName} isdk-widget--center`} style={style}>
+        <div className="isdk-widget__hero">
+          <div className="isdk-lobby">
+            <p className="isdk-kicker">Session expired</p>
+            <h2 className="isdk-lobby__title">This interview session has timed out</h2>
+            <p className="isdk-lobby__meta">
+              {interview.error?.message ??
+                'The time limit for this session was reached, so it can no longer be resumed.'}
+            </p>
+          </div>
         </div>
       </div>
     );

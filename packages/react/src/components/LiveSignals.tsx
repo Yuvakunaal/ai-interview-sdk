@@ -17,7 +17,7 @@ export function LiveSignals({ rubric, transcript }: LiveSignalsProps) {
   if (!latest) return null;
 
   return (
-    <div className="isdk-live-signals">
+    <div className="isdk-live-signals" role="log" aria-live="polite">
       <p className="isdk-kicker">Live signals</p>
       <ul className="isdk-live-signals__list">
         {rubric.dimensions.map((dimension) => {

@@ -39,8 +39,8 @@ describe('QuestionCard', () => {
     expect(announcer).toHaveTextContent('Follow-up: Can you elaborate on collisions?');
   });
 
-  it('moves focus to the heading once when the interview view first appears, but not again on later questions', () => {
-    const { rerender } = render(
+  it('moves focus to the heading on the very first question', () => {
+    render(
       <QuestionCard
         prompt="Explain hash maps."
         questionNumber={1}
@@ -49,13 +49,23 @@ describe('QuestionCard', () => {
       />,
     );
     expect(screen.getByRole('heading', { name: 'Explain hash maps.' })).toHaveFocus();
+  });
 
-    // Candidate manually moves focus elsewhere (e.g. into the answer field)...
+  it('moves focus to the new heading on every subsequent question, instead of losing it to <body>', () => {
+    const { rerender } = render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={3}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    // Candidate tabs into the answer field, then submits — the parent
+    // advances to a new prompt, remounting this whole body via `key`.
     screen.getByLabelText('Your answer').focus();
     expect(screen.getByLabelText('Your answer')).toHaveFocus();
 
-    // ...and a new question arrives. The new heading must not steal focus —
-    // only the live region (covered by the test above) should announce it.
     rerender(
       <QuestionCard
         prompt="Explain binary search."
@@ -64,7 +74,12 @@ describe('QuestionCard', () => {
         onSubmit={vi.fn()}
       />,
     );
-    expect(screen.getByRole('heading', { name: 'Explain binary search.' })).not.toHaveFocus();
+
+    // The old textarea no longer exists once remounted; without an explicit
+    // refocus, the browser silently drops focus to <body>, forcing a
+    // keyboard-only candidate to Tab from the very top of the page after
+    // every single answer. The new heading must pick up focus instead.
+    expect(screen.getByRole('heading', { name: 'Explain binary search.' })).toHaveFocus();
   });
 
   it('renders the question number, prompt, and answer field', () => {
@@ -281,6 +296,51 @@ describe('QuestionCard', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Replay question' })).toBeInTheDocument(),
     );
+
+    playSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('speaks every subsequent question too, not just the first one', async () => {
+    const playSpy = vi
+      .spyOn(window.HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined);
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:fake-url'),
+      revokeObjectURL: vi.fn(),
+    });
+    const synthesize = vi.fn(async () => ({
+      audio: new ArrayBuffer(4),
+      mimeType: 'audio/mpeg',
+    }));
+
+    const { rerender } = render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={2}
+        onSubmit={vi.fn()}
+        synthesize={synthesize}
+      />,
+    );
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+
+    // This is exactly how InterviewWidget advances to the next question —
+    // a new `prompt` prop on the same <QuestionCard>.
+    rerender(
+      <QuestionCard
+        prompt="Explain binary search."
+        questionNumber={2}
+        totalQuestions={2}
+        onSubmit={vi.fn()}
+        synthesize={synthesize}
+      />,
+    );
+
+    await waitFor(() => expect(synthesize).toHaveBeenLastCalledWith('Explain binary search.'));
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(2));
 
     playSpy.mockRestore();
     vi.unstubAllGlobals();

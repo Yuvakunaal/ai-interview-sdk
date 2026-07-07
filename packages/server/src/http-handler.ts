@@ -81,6 +81,13 @@ function isProcessAnswerRequestBody(value: unknown): value is ProcessAnswerReque
  * Fetch API Request/Response (Next.js Route Handlers, Deno, Bun, Cloudflare
  * Workers, Hono); for Node's classic `(req, res)` style (plain http, Express),
  * wrap it — see this package's README for a short adapter snippet.
+ *
+ * This handler has no authentication or rate-limiting of its own — every
+ * request reaches your adapter and results in a real, billed AI-provider
+ * call. Put it behind your own auth middleware and a rate limiter (e.g. a
+ * per-session or per-IP cap) before exposing it publicly; otherwise an
+ * unauthenticated client can run up provider costs by hitting this route
+ * directly. See "Not yet implemented" in this package's README.
  */
 export function createInterviewAnswerHandler(
   processor: ServerAnswerProcessor,

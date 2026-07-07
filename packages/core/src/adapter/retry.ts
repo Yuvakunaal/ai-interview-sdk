@@ -44,6 +44,10 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
   const isRetryable = options.isRetryable ?? defaultIsRetryable;
   const sleep = options.sleep ?? defaultSleep;
 
+  if (maxAttempts <= 0) {
+    throw new Error('withRetry: maxAttempts must be at least 1.');
+  }
+
   let lastError: unknown;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {

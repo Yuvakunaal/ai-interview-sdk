@@ -103,6 +103,27 @@ export function MicButton({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- report on data changes only; onLevelsChange is expected to be stable per session
   }, [levels, isSupported]);
 
+  // Mirrored into a ref (rather than cleaning up on every `activeStream`
+  // change) so the mount-cleanup effect below only stops tracks once, at
+  // actual unmount — not a second time on top of stopAndTranscribe's own
+  // recorder.stop(), which already nulls activeStream as part of its normal
+  // stop flow.
+  const activeStreamRef = useRef<MediaStream | null>(null);
+  useEffect(() => {
+    activeStreamRef.current = activeStream;
+  }, [activeStream]);
+
+  useEffect(() => {
+    // Only stopAndTranscribe's own recorder.stop() releases tracks — if this
+    // button unmounts mid-recording (e.g. the candidate clicks Pause, which
+    // swaps the whole question view away without ever calling stop), the
+    // mic would otherwise stay hot indefinitely. Mirrors InterviewLobby's
+    // own preview-stream cleanup.
+    return () => {
+      activeStreamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
   const stopAndTranscribe = useCallback(async () => {
     const recorder = recorderRef.current;
     recorderRef.current = null;

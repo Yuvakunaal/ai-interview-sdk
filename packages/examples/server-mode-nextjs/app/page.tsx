@@ -2,6 +2,7 @@
 
 import { InterviewWidget } from '@interview-sdk/react';
 import type { InterviewReport } from '@interview-sdk/react';
+import { mockSynthesize, mockTranscribe } from '../lib/mock-voice';
 import { questions, rubric } from '../lib/questions';
 
 /**
@@ -53,6 +54,10 @@ export default function Page() {
         rubric={rubric}
         mode="server"
         apiBaseUrl="/api/interview/answer"
+        maxFollowUpDepth={1}
+        sessionTimeoutMs={1_080_000}
+        synthesize={mockSynthesize}
+        transcribe={mockTranscribe}
         onSessionEnd={(report: InterviewReport) => {
           void submitFinalReport(report);
         }}

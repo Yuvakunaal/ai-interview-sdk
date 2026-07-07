@@ -97,6 +97,31 @@ describe('QuestionAudio', () => {
     expect(onError.mock.calls[0]![0].message).toBe('still blocked');
   });
 
+  it('rewinds to the start before replaying, so clicking Replay after the audio ended is actually audible', async () => {
+    const user = userEvent.setup();
+    const synthesize = vi.fn(async () => result());
+    const { container } = render(
+      <QuestionAudio text="Explain hash maps." synthesize={synthesize} />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Replay question' })).toBeInTheDocument(),
+    );
+
+    const audioEl = container.querySelector('audio')!;
+    // Simulate the element having reached the end of a real playback —
+    // calling .play() again from here just continues from the current
+    // (end-of-track) position, which produces no audible sound at all.
+    audioEl.currentTime = 42;
+    fireEvent.ended(audioEl);
+    playSpy.mockClear();
+
+    await user.click(screen.getByRole('button', { name: 'Replay question' }));
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
+    expect(audioEl.currentTime).toBe(0);
+  });
+
   it('re-synthesizes and revokes the previous audio URL when the text changes', async () => {
     const synthesize = vi.fn(async () => result());
     const { rerender } = render(

@@ -47,6 +47,13 @@ describe('withRetry', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
+  it('throws a real Error, not undefined, when maxAttempts is 0', async () => {
+    const fn = vi.fn(async () => 'never called');
+
+    await expect(withRetry(fn, { sleep: noopSleep, maxAttempts: 0 })).rejects.toThrow(Error);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
   it('gives up after maxAttempts and throws the last error', async () => {
     const fn = vi.fn(async () => {
       throw new ProviderRateLimitError('rate limited', 'fake');
