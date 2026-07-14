@@ -72,8 +72,8 @@ importers:
   packages/adapters/adapter-elevenlabs:
     dependencies:
       '@elevenlabs/elevenlabs-js':
-        specifier: ^2.56.0
-        version: 2.56.0
+        specifier: ^2.58.0
+        version: 2.58.0
       '@interview-sdk/core':
         specifier: workspace:*
         version: link:../../core
@@ -554,8 +554,8 @@ packages:
     resolution: {integrity: sha512-9x3hwDuG9ysMwugklHX1Ta8Rg6NuZE4kByRB7OM5w3dvdwNxW6X+eDiGHga44eF5d51KD0w54pPa+7GGb84t7w==}
     engines: {node: '>=18.0.0'}
 
-  '@elevenlabs/elevenlabs-js@2.56.0':
-    resolution: {integrity: sha512-cB96D/MZugHpT/Gs59VFDqWX683XTnDfj3WwMcy8KulTSXkdPbBEOqlKYC/p6zXmCbUu8zXIsCaeQ3VPNIwC8Q==}
+  '@elevenlabs/elevenlabs-js@2.58.0':
+    resolution: {integrity: sha512-RxEqyZlufgn3jK2Mo9tXSP5hgE+FWE5LyDVCqtSEy5+fDuN1Xc34rn7FbNfbiW5EcaLG3+jMHdxTpnDyn5dRoQ==}
     engines: {node: '>=18.0.0'}
 
   '@emnapi/core@1.11.1':
@@ -3874,7 +3874,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@elevenlabs/elevenlabs-js@2.56.0':
+  '@elevenlabs/elevenlabs-js@2.58.0':
     dependencies:
       command-exists: 1.2.9
       node-fetch: 2.7.0
