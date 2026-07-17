@@ -230,7 +230,11 @@ describe('MicButton', () => {
     expect(onRecordingChange).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button'));
-    expect(onRecordingChange).toHaveBeenNthCalledWith(1, true);
+    // createRecorder() is itself async, so onRecordingChange(true) lands via
+    // a follow-up state update + effect, not synchronously with the click —
+    // asserting this without waitFor is exactly the kind of timing
+    // assumption that's fast-machine-only, and flaked in CI.
+    await waitFor(() => expect(onRecordingChange).toHaveBeenNthCalledWith(1, true));
 
     await user.click(screen.getByRole('button', { name: 'Stop recording' }));
     await waitFor(() => expect(onRecordingChange).toHaveBeenNthCalledWith(2, false));
