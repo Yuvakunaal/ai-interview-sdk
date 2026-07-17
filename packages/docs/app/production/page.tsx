@@ -184,8 +184,11 @@ await dispatcher.send('sessionEnd', { sessionId, totalScore });`}
         in-memory retry loop alone.
       </Callout>
 
+      <h2>Next: keep the results</h2>
       <p>
-        See <Link href="/security">Security &amp; compliance</Link> for the full picture, and{' '}
+        <Link href="/saving-results">Saving results</Link> walks through storing every finished
+        interview&apos;s report in your own database — signature-verified, tied to your own users.
+        Then see <Link href="/security">Security &amp; compliance</Link> for the full picture, and{' '}
         <Link href="/error-handling">Error handling &amp; resilience</Link> for the full provider
         error taxonomy.
       </p>

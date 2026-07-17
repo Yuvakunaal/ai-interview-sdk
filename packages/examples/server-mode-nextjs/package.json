@@ -8,18 +8,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },
   "dependencies": {
     "@interview-sdk/adapter-elevenlabs": "workspace:*",
-    "@interview-sdk/adapter-gemini": "workspace:*",
     "@interview-sdk/adapter-openai": "workspace:*",
     "@interview-sdk/core": "workspace:*",
     "@interview-sdk/react": "workspace:*",
     "@interview-sdk/server": "workspace:*",
     "next": "^16.2.10",
-    "openai": "^6.45.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

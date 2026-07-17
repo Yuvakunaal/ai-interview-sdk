@@ -48,6 +48,19 @@ describe('main — top level', () => {
     expect(output()).toContain('Usage:');
   });
 
+  it('help text sequences all six subcommands by stage and distinguishes building from contributing', async () => {
+    await main([]);
+    const help = output();
+    for (const command of ['dashboard', 'init', 'simulate', 'bias-harness', 'pack validate', 'pack init']) {
+      expect(help).toContain(command);
+    }
+    // Ordered by workflow stage, not alphabetically or by implementation order.
+    expect(help.indexOf('dashboard')).toBeLessThan(help.indexOf('init'));
+    expect(help.indexOf('init')).toBeLessThan(help.indexOf('simulate'));
+    expect(help.indexOf('simulate')).toBeLessThan(help.indexOf('pack validate'));
+    expect(help).toContain('CONTRIBUTING.md');
+  });
+
   it('prints the version and returns 0 for --version', async () => {
     expect(await main(['--version'])).toBe(0);
     expect(output()).toContain('@interview-sdk/cli@');
@@ -177,6 +190,20 @@ describe('main — pack', () => {
     const packPath = join(dir, 'starter.json');
     expect(await main(['pack', 'init', 'my-pack', packPath])).toBe(0);
     expect(output()).toContain('Wrote');
+  });
+
+  it('outputs JSON when --json is passed, like simulate and bias-harness do', async () => {
+    const packPath = join(dir, 'pack.json');
+    await writeFile(
+      packPath,
+      JSON.stringify({
+        name: 'dsa',
+        questions: [{ id: 'q1', prompt: 'x' }],
+        rubric: [{ id: 'technical', label: 'Technical', weight: 1 }],
+      }),
+    );
+    expect(await main(['pack', 'validate', packPath, '--json'])).toBe(0);
+    expect(() => JSON.parse(output())).not.toThrow();
   });
 
   it('returns 1 for an unknown pack subcommand', async () => {

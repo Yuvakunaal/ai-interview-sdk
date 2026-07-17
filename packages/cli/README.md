@@ -112,17 +112,40 @@ _or_ if its variance exceeds `--variance-threshold` (default 8 points) —
 consistent-but-wrong and correct-but-inconsistent are both real failure
 modes here.
 
+Pass `--json` on either command for a machine-readable report — the same
+flag `pack validate` supports, for a CI step that gates on the exit code
+and parses the report the same way regardless of which command produced it.
+
 ## `pack` — question-pack tooling
 
 ```bash
 npx interview-sdk pack init my-pack ./my-pack.json
-npx interview-sdk pack validate ./my-pack.json
+npx interview-sdk pack validate ./my-pack.json [--json]
 ```
 
 Question packs (§12) are an open JSON/YAML format for question sets +
 rubrics + concept maps, publishable as `@interview-sdk/pack-*` npm packages.
 `pack init` scaffolds a starter file; `pack validate` checks one against the
 schema (duplicate ids, invalid weights, an orphaned `conceptMap` entry).
+
+**Using a pack with `simulate`/`bias-harness`:** a pack is intentionally
+adapter-free (it's meant to be published and shared, so it can't embed a
+live API key) — `interview.config.mjs` is where the adapter gets added. Load
+the pack's questions/rubric into your config instead of duplicating them:
+
+```js
+// interview.config.mjs
+import { readFileSync } from 'node:fs';
+import { OpenAIAdapter } from '@interview-sdk/adapter-openai';
+
+const pack = JSON.parse(readFileSync('./my-pack.json', 'utf8'));
+
+export default {
+  questions: pack.questions,
+  rubric: pack.rubric,
+  adapter: new OpenAIAdapter({ apiKey: process.env.OPENAI_API_KEY }),
+};
+```
 
 ## Not yet implemented
 

@@ -116,7 +116,11 @@ export default {
         <li>
           <code>interview-sdk pack validate ./my-pack.json</code> /{' '}
           <code>pack init &lt;name&gt; &lt;file&gt;</code> — the open question-pack format
-          (questions + rubric + concept map), JSON or YAML.
+          (questions + rubric + concept map), JSON or YAML. A pack has no adapter of its
+          own (it&apos;s meant to be shared, so it can&apos;t embed a live key) — load its
+          questions/rubric into an <code>interview.config.mjs</code> to run it through{' '}
+          <code>simulate</code> or <code>bias-harness</code>; see the{' '}
+          <code>@interview-sdk/cli</code> README for the exact snippet.
         </li>
       </ul>
       <p>All of this runs locally or in your own CI — no maintainer-hosted service involved.</p>

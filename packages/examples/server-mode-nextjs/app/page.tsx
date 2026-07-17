@@ -40,9 +40,10 @@ export default function Page() {
         score object — see <code>app/api/interview/answer/route.ts</code>.
       </p>
       <p>
-        The route runs a real <code>@interview-sdk/adapter-gemini</code> for evaluation and real{' '}
-        <code>@interview-sdk/adapter-elevenlabs</code> for voice — both keys stay server-side (see{' '}
-        <code>app/api/interview/answer/route.ts</code> and <code>app/api/voice/*/route.ts</code>).
+        The route uses a mock adapter and mock voice by default so this runs with zero setup — swap
+        in a real <code>@interview-sdk/adapter-*</code> for evaluation and voice; both keys would
+        stay server-side (see <code>app/api/interview/answer/route.ts</code> and{' '}
+        <code>app/api/voice/*/route.ts</code>).
       </p>
       <p>
         When the interview finishes, the report is sent to{' '}

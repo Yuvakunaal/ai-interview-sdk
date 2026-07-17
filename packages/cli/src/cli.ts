@@ -13,13 +13,38 @@ import { CLI_PACKAGE_NAME, CLI_PACKAGE_VERSION } from './index.js';
 
 const HELP_TEXT = `${CLI_PACKAGE_NAME}@${CLI_PACKAGE_VERSION}
 
-Usage:
-  interview-sdk init [--framework nextjs|node] [--dir <path>] [--force]
+Usage: interview-sdk <command> [options]
+
+These commands are for building an app WITH this SDK. Contributing to the
+SDK itself instead? See CONTRIBUTING.md — that's a different set of
+commands (pnpm build/test/lint) run from a clone of the monorepo.
+
+1. Design — sketch the interview and get integration code, no API key yet
   interview-sdk dashboard [--port <n>] [--host <address>]
+      Live preview against a mock adapter; copy the generated code.
+
+2. Ship — scaffold the Server Mode backend route you'll actually deploy
+  interview-sdk init [--framework nextjs|node] [--dir <path>] [--force]
+      Writes the API route + .env.example; refuses to overwrite without --force.
+
+3. Prove — sanity-check the rubric and AI grading before a candidate sees it
   interview-sdk simulate --config <path> [--persona <id,id,...>] [--json]
+      Runs 5 scripted personas (strong/weak/off-topic/silent/adversarial)
+      through your full question bank, follow-ups included.
   interview-sdk bias-harness --config <path> --samples <path> [--runs <n>] [--variance-threshold <n>] [--json]
-  interview-sdk pack validate <file>
+      Re-scores labeled samples repeatedly; checks they land in range and
+      stay consistent run to run.
+
+4. Share — package question sets as reusable, publishable JSON/YAML
+  interview-sdk pack validate <file> [--json]
+      Checks a question pack against the open pack format.
   interview-sdk pack init <name> <file> [--force]
+      Scaffolds a starter question pack.
+
+simulate/bias-harness both load --config the same way: a small JS/TS module
+whose default export is { questions, rubric, adapter }. A question pack
+(step 4) is a separate, adapter-free format — import its questions/rubric
+into that module to use one with simulate/bias-harness (see the CLI README).
 
 All commands run locally or in your own CI — no maintainer-hosted service is involved.
 `;
@@ -119,10 +144,15 @@ async function runPack(args: string[]): Promise<number> {
   const [subcommand, ...rest] = args;
 
   if (subcommand === 'validate') {
-    const [file] = rest;
+    const { values, positionals } = parseArgs({
+      args: rest,
+      options: { json: { type: 'boolean', default: false } },
+      allowPositionals: true,
+    });
+    const [file] = positionals;
     if (!file) throw new CliUsageError('pack validate requires a file path.');
     const result = await validateQuestionPackFile(file);
-    console.log(formatPackValidation(result, file));
+    console.log(formatPackValidation(result, file, values.json));
     return result.valid ? 0 : 1;
   }
 

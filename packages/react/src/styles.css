@@ -132,6 +132,17 @@
   box-sizing: border-box;
 }
 
+/* Thin, theme-matched scrollbars on the widget's internal panels (the
+   transcript sidebar, a long report) — the default chunky OS scrollbar
+   reads as a foreign element inside the paper surface. Purely additive:
+   browsers without support keep their default scrollbars, and it can't
+   affect layout. */
+.isdk-widget *,
+.isdk-transcript * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--isdk-rule) transparent;
+}
+
 .isdk-widget,
 .isdk-question-card,
 .isdk-report-card,
@@ -450,6 +461,7 @@
   font-size: 1.65rem;
   letter-spacing: -0.01em;
   margin: 0 0 0.75rem;
+  text-wrap: balance;
 }
 
 .isdk-score-summary__title {
@@ -1503,6 +1515,7 @@ body:has(.isdk-widget) {
   font-size: 1.3rem;
   letter-spacing: -0.01em;
   margin: 0 0 0.5rem;
+  text-wrap: balance;
 }
 
 .isdk-lobby__meta {

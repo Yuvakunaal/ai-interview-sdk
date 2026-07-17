@@ -45,6 +45,12 @@ freshly-scaffolded production project should refuse to run silently on fake
 data until you configure a real provider. Use this example to see the
 whole thing running end to end; use `init` to start a real project.
 
+Voice input/output works the same way: `app/api/voice/synthesize/route.ts`
+and `app/api/voice/transcribe/route.ts` use `lib/mock-voice.ts` by default
+(a beep and a placeholder transcript, no key), proxied through this app's
+own server so a real provider key — once you swap one in, per the TODO in
+each route — never reaches the browser either.
+
 ## Verifying the final report
 
 Set `INTERVIEW_SIGNING_SECRET` and every evaluation `/api/interview/answer`

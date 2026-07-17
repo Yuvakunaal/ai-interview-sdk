@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Callout } from '../components/Callout';
 import { CodeBlock } from '../components/CodeBlock';
 
 export default function Home() {
@@ -16,38 +17,67 @@ export default function Home() {
         {`npm install @interview-sdk/core @interview-sdk/react`}
       </CodeBlock>
 
-      <h2>Setup walkthrough video</h2>
+      <h2>Your path, start to finish</h2>
       <p>
-        <em>
-          Coming soon — the primary onboarding path is a short install-to-running-widget video,
-          embedded here once recorded. Follow the written Quick Start below in the meantime; it
-          covers the same steps.
-        </em>
+        This is the whole journey — each step is one page, and each page ends where the next one
+        starts:
       </p>
+      <ol>
+        <li>
+          <strong>
+            <Link href="/dashboard">Design it — Local Dashboard</Link>
+          </strong>{' '}
+          — run <code>npx interview-sdk dashboard</code>, shape your questions, rubric, and
+          interview style in a live preview, and copy the exact integration code. No API key
+          needed.
+        </li>
+        <li>
+          <strong>
+            <Link href="/quick-start">Try it — Quick Start (Client Mode)</Link>
+          </strong>{' '}
+          — paste that code into your app, add one AI provider key, and run a full interview
+          locally in about five minutes. Prototyping only.
+        </li>
+        <li>
+          <strong>
+            <Link href="/production">Ship it — Production Setup (Server Mode)</Link>
+          </strong>{' '}
+          — move the key and scoring to your own backend route. The widget code barely changes;
+          the security model changes completely.
+        </li>
+        <li>
+          <strong>
+            <Link href="/saving-results">Keep it — Saving results</Link>
+          </strong>{' '}
+          — store every finished interview&apos;s report in your own database, tied to your own
+          users, with tamper-proof HMAC verification.
+        </li>
+        <li>
+          <strong>
+            <Link href="/trust-tooling">Prove it — Simulator &amp; Bias Harness</Link>
+          </strong>{' '}
+          — before real candidates, run scripted personas and labeled samples against your rubric
+          to catch unfairness and inconsistency in CI.
+        </li>
+      </ol>
+      <Callout type="tip">
+        In a hurry? Steps 1–2 get you a working interview today. Steps 3–5 are what make it
+        production-grade — do them before a real candidate ever sees it.
+      </Callout>
 
-      <h2>Where to go next</h2>
+      <h2>Going deeper</h2>
       <ul>
         <li>
-          <Link href="/dashboard">Local Dashboard</Link> — design your interview and get real
-          integration code in a browser, before you open an editor. Start here.
-        </li>
-        <li>
-          <Link href="/quick-start">Quick Start (Client Mode)</Link> — fastest path to a running
-          demo, no backend required.
-        </li>
-        <li>
-          <Link href="/production">Production Setup (Server Mode)</Link> — what you actually ship.
-          Equally prominent here, not an afterthought.
-        </li>
-        <li>
-          <Link href="/integrations/react-nextjs">React + Next.js integration</Link>
+          <Link href="/integrations/react-nextjs">React + Next.js integration</Link> —
+          client/server component boundaries and the App Router route pattern.
         </li>
         <li>
           <Link href="/integrations/providers">AI &amp; voice provider guides</Link> — OpenAI,
-          Claude, Gemini, Deepgram, ElevenLabs.
+          Claude, Gemini, Deepgram, ElevenLabs, plus failover.
         </li>
         <li>
-          <Link href="/cookbook/rubric-evaluation">Rubric &amp; evaluation cookbook</Link>
+          <Link href="/cookbook/rubric-evaluation">Rubric &amp; evaluation cookbook</Link> — how
+          scoring, concept coverage, and follow-ups actually behave.
         </li>
         <li>
           <Link href="/styling-and-composition">Styling, composition &amp; accessibility</Link> —
@@ -58,31 +88,26 @@ export default function Home() {
           error taxonomy, hard limits, and retries.
         </li>
         <li>
-          <Link href="/session-persistence-and-events">Session persistence &amp; events</Link>
+          <Link href="/session-persistence-and-events">Session persistence &amp; events</Link> —
+          resuming after a refresh, and the typed event emitter.
         </li>
         <li>
-          <Link href="/security">Security &amp; compliance checklist</Link>
+          <Link href="/coding-interviews">Coding Interview Mode</Link> — sandboxed code execution
+          and weighted test-case scoring.
         </li>
         <li>
-          <Link href="/trust-tooling">Interview Simulator &amp; Bias Harness walkthrough</Link>
+          <Link href="/security">Security &amp; compliance checklist</Link> — what the
+          architecture guarantees, and what stays your responsibility.
         </li>
       </ul>
 
-      <h2>What &quot;working&quot; means</h2>
-      <p>By the end of the Quick Start, you should be able to:</p>
-      <ol>
-        <li>Install the package</li>
-        <li>Add an API key</li>
-        <li>Define questions + rubric</li>
-        <li>
-          Drop in <code>&lt;InterviewWidget /&gt;</code>
-        </li>
-        <li>Run the project</li>
-      </ol>
-      <p className="docs-lede">
-        …and get a working AI interview — with dynamic follow-ups, semantic evaluation, rubric
-        scoring, voice, and reports — with a clear, well-documented path to a secure,
-        production-ready Server Mode setup.
+      <h2>Setup walkthrough video</h2>
+      <p>
+        <em>
+          Coming soon — the primary onboarding path is a short install-to-running-widget video,
+          embedded here once recorded. The written path above covers the same steps in the
+          meantime.
+        </em>
       </p>
     </>
   );

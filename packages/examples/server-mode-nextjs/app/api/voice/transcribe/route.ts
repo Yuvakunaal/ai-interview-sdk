@@ -1,31 +1,17 @@
-import { ElevenLabsAdapter } from '@interview-sdk/adapter-elevenlabs';
+import { mockTranscribe } from '../../../../lib/mock-voice';
 
-// Built lazily on first request rather than at module scope: `next build`
-// statically imports every route module during page-data collection, before
-// any env vars are guaranteed to be set, so an eager throw here would fail
-// the build itself rather than just an unconfigured request.
-let voice: ElevenLabsAdapter | undefined;
-
-function getVoice(): ElevenLabsAdapter {
-  if (voice) return voice;
-
-  if (!process.env.ELEVENLABS_API_KEY) {
-    throw new Error(
-      'ELEVENLABS_API_KEY is not set — add it to .env.local (never NEXT_PUBLIC_, this must stay server-only).',
-    );
-  }
-
-  voice = new ElevenLabsAdapter({ apiKey: process.env.ELEVENLABS_API_KEY });
-  return voice;
-}
+// TODO: swap mockTranscribe() for a real provider before shipping, e.g.:
+//   import { ElevenLabsAdapter } from '@interview-sdk/adapter-elevenlabs';
+//   const voice = new ElevenLabsAdapter({ apiKey: process.env.ELEVENLABS_API_KEY! });
+//   (await voice.transcribe(audio)).text
 
 /**
- * Real STT via @interview-sdk/adapter-elevenlabs, kept entirely server-side
- * — see synthesize/route.ts for why. The client wrapper POSTs the recorded
+ * Server-side STT proxy — see synthesize/route.ts for why this stays
+ * server-side even in mock form. The client wrapper POSTs the recorded
  * answer's raw audio bytes as the request body and gets back { text }.
  */
 export async function POST(request: Request): Promise<Response> {
-  const audio = await request.arrayBuffer();
-  const result = await getVoice().transcribe(audio);
-  return Response.json({ text: result.text });
+  const audio = await request.blob();
+  const text = await mockTranscribe(audio);
+  return Response.json({ text });
 }

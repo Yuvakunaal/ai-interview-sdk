@@ -34,6 +34,11 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Production Setup',
         description: 'Server Mode — what you actually ship.',
       },
+      {
+        href: '/saving-results',
+        label: 'Saving results',
+        description: 'Store every interview report in your own database, verified.',
+      },
     ],
   },
   {

@@ -195,12 +195,21 @@ importers:
 
   packages/examples/basic-demo:
     dependencies:
+      '@interview-sdk/adapter-elevenlabs':
+        specifier: workspace:*
+        version: link:../../adapters/adapter-elevenlabs
+      '@interview-sdk/adapter-openai':
+        specifier: workspace:*
+        version: link:../../adapters/adapter-openai
       '@interview-sdk/core':
         specifier: workspace:*
         version: link:../../core
       '@interview-sdk/react':
         specifier: workspace:*
         version: link:../../react
+      openai:
+        specifier: ^6.45.0
+        version: 6.45.0(ws@8.21.0)(zod@4.4.3)
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -229,9 +238,6 @@ importers:
       '@interview-sdk/adapter-elevenlabs':
         specifier: workspace:*
         version: link:../../adapters/adapter-elevenlabs
-      '@interview-sdk/adapter-gemini':
-        specifier: workspace:*
-        version: link:../../adapters/adapter-gemini
       '@interview-sdk/adapter-openai':
         specifier: workspace:*
         version: link:../../adapters/adapter-openai
@@ -247,9 +253,6 @@ importers:
       next:
         specifier: ^16.2.10
         version: 16.2.10(@babel/core@7.29.7)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      openai:
-        specifier: ^6.45.0
-        version: 6.45.0(ws@8.21.0)(zod@4.4.3)
       react:
         specifier: ^19.2.7
         version: 19.2.7
