@@ -1,11 +1,14 @@
 # AI Interview SDK
 
 [![CI](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/codeql.yml/badge.svg)](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Node >= 20.19](https://img.shields.io/badge/node-%3E%3D20.19-339933?logo=node.js&logoColor=white)](#development)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-8A641F.svg)](./CONTRIBUTING.md)
 
-Open-source infrastructure for embedding AI-scored interviews into your own
-product — your API keys, your backend, your database. The maintainers never
-see, store, or process a single candidate's answer.
+**Drop an AI-scored interview into your own product as one React component —
+your API keys, your backend, your database, end to end.** The maintainers
+never see, store, or process a single candidate's answer.
 
 This is a trust story as much as a code library: in a space that's had a
 public data breach, "we store nothing, and we can prove it architecturally"
@@ -49,8 +52,33 @@ live yet — run it locally (`pnpm --filter @interview-sdk/docs dev`, then open
 > [EDGE_CASES.md](./EDGE_CASES.md) for an honest, line-by-line audit of what
 > is and isn't covered — it names real gaps, not just what shipped.
 
+## Highlights
+
+- **One component, two modes.** `mode="client"` gets a real interview
+  running today, no backend. `mode="server"` ships it safely — same widget,
+  two props different.
+- **A follow-up engine that's actually dynamic** — depth-limited,
+  repeat-preventing, difficulty-scaled to how the candidate is doing, not a
+  fixed question list.
+- **Scores you can prove weren't tampered with.** Server Mode HMAC-signs
+  every evaluation; verify it before you trust a client-reconstructed report.
+- **Fairness tooling most interview tools skip entirely.** The Interview
+  Simulator and Bias & Consistency Harness run scripted personas — including
+  an adversarial prompt-injection attempt — against your real rubric, before
+  a real candidate ever sees it.
+- **Five real provider adapters** (OpenAI, Claude, Gemini, Deepgram,
+  ElevenLabs) behind one interface, with automatic failover across them.
+- **Multi-language, actually tested** — Hindi and Telugu bare-admission
+  detection is exercised in the test suite, not just claimed in a doc.
+- **Session persistence and a typed event stream** for resuming after a
+  refresh and piping activity into your own analytics.
+- **Zero-Infra, for real.** No maintainer-run service, ever — not the
+  interview, not the simulator, not the CI gate. Your infrastructure the
+  whole way down.
+
 ## Contents
 
+- [Highlights](#highlights)
 - [What this is — and isn't](#what-this-is--and-isnt)
 - [Zero-Infra Guarantee](#zero-infra-guarantee)
 - [Packages](#packages)
