@@ -71,8 +71,10 @@ export default function StylingAndComposition() {
               <td>
                 The hook <code>InterviewWidget</code> itself is built on — session status, current
                 question/prompt, transcript, <code>start</code>/<code>pause</code>/
-                <code>resume</code>/<code>submitAnswer</code>/<code>retryLastAnswer</code>, and the
-                final report.
+                <code>resume</code>/<code>submitAnswer</code>/<code>retryLastAnswer</code>, the
+                final report, and <code>getSnapshot</code>/<code>events</code> for session
+                persistence and analytics (see{' '}
+                <a href="/session-persistence-and-events">Session persistence &amp; events</a>).
               </td>
             </tr>
             <tr>

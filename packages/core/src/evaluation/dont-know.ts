@@ -5,6 +5,12 @@
 // Every entry here is pre-normalized the same way normalize() below
 // transforms input (apostrophes stripped entirely) — Set membership is
 // exact-string, so an entry with a literal apostrophe would never match.
+// Hindi and Telugu are the two additional languages this SDK explicitly
+// documents supporting (see the "Multi-language interviews" cookbook page)
+// — this isn't an attempt at exhaustive i18n coverage, just the same bare-
+// admission guarantee English gets, in the two languages actually claimed.
+// Devanagari/Telugu script has no case distinction, so normalize()'s
+// toLowerCase() is a harmless no-op for these entries.
 const DONT_KNOW_PHRASES = new Set([
   'i dont know',
   'i do not know',
@@ -24,6 +30,15 @@ const DONT_KNOW_PHRASES = new Set([
   'i cant answer this',
   'pass',
   'skip',
+  // Hindi
+  'मुझे नहीं पता',
+  'मुझे पता नहीं',
+  'पता नहीं',
+  'नहीं पता',
+  'मालूम नहीं',
+  // Telugu
+  'నాకు తెలియదు',
+  'తెలియదు',
 ]);
 
 function normalize(text: string): string {
@@ -31,7 +46,9 @@ function normalize(text: string): string {
     .toLowerCase()
     .trim()
     .replace(/[’‘]/g, "'")
-    .replace(/[.!?]+$/, '')
+    // Latin .!? plus the Devanagari danda/double danda (।॥) — the natural
+    // way a Hindi sentence ends, not covered by the Latin punctuation class.
+    .replace(/[.!?।॥]+$/, '')
     .replace(/'/g, '')
     .replace(/\s+/g, ' ');
 }

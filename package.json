@@ -5,6 +5,14 @@
   "type": "module",
   "description": "Open-source TypeScript/React infrastructure for embedding AI-powered interviews into any application, with your own AI keys, backend, and database.",
   "license": "MIT",
+  "homepage": "https://github.com/Yuvakunaal/ai-interview-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/Yuvakunaal/ai-interview-sdk/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Yuvakunaal/ai-interview-sdk.git"
+  },
   "engines": {
     "node": ">=20.19.0"
   },

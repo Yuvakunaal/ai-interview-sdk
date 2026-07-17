@@ -45,6 +45,10 @@
     "url": "https://github.com/Yuvakunaal/ai-interview-sdk.git",
     "directory": "packages/adapters/adapter-claude"
   },
+  "homepage": "https://github.com/Yuvakunaal/ai-interview-sdk/tree/main/packages/adapters/adapter-claude#readme",
+  "bugs": {
+    "url": "https://github.com/Yuvakunaal/ai-interview-sdk/issues"
+  },
   "keywords": [
     "ai-interview",
     "interview-sdk",

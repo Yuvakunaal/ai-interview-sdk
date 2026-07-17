@@ -77,7 +77,7 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: '/session-persistence-and-events',
         label: 'Session persistence & events',
-        description: 'Resuming after a refresh, and the typed event emitter — core-only today.',
+        description: 'Resuming after a refresh, and the typed event emitter, via useInterview.',
       },
       {
         href: '/coding-interviews',

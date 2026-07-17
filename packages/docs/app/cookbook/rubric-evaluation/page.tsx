@@ -92,7 +92,18 @@ export default function RubricCookbook() {
         <code>validateInterviewConfig</code> checks the tag is well-formed, nothing more. There is
         no SDK-side translation layer: evaluation quality for a given language is entirely a
         function of the underlying model&apos;s own multilingual understanding, including for
-        mixed-language answers.
+        mixed-language answers — this is tested directly, not just assumed, with real Hindi,
+        Telugu, and mixed-language answers exercised in <code>@interview-sdk/core</code>&apos;s own
+        test suite.
+      </p>
+      <p>
+        One deterministic behavior is explicitly localized rather than left to the model: a bare
+        &quot;I don&apos;t know&quot; short-circuits straight to a score of <code>0</code> with no
+        AI call at all, regardless of how lenient a given provider might otherwise be — this
+        recognizes the equivalent bare admission in Hindi and Telugu too (
+        <code>&quot;पता नहीं&quot;</code>, <code>&quot;తెలియదు&quot;</code>), not just English. A
+        real, partial attempt (&quot;I&apos;m not sure, but maybe it uses hashing&quot;) is never
+        caught by this — only an unambiguous bare admission is.
       </p>
 
       <h2>Verifying your rubric is actually fair</h2>

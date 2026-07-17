@@ -211,6 +211,50 @@ describe('EvaluationEngine', () => {
     expect(result.flags).toEqual(['i_dont_know']);
   });
 
+  it('does not call the adapter for a bare "don\'t know" in Hindi or Telugu either', async () => {
+    const adapter = fakeAdapter(
+      JSON.stringify({ dimensionScores: { technical: 80, communication: 75 } }),
+    );
+    const engine = new EvaluationEngine();
+
+    const result = await engine.evaluate({
+      question,
+      rubric,
+      answer: answer('मुझे नहीं पता'),
+      adapter,
+    });
+
+    expect(adapter.complete).not.toHaveBeenCalled();
+    expect(result.totalScore).toBe(0);
+    expect(result.flags).toEqual(['i_dont_know']);
+  });
+
+  it('sends a real Hindi/mixed-language answer to the adapter unmangled, and scores the response normally', async () => {
+    const hindiAnswer =
+      'हैश मैप एक बकेट array का उपयोग करता है और collision को chaining से resolve करता है।';
+    const adapter = fakeAdapter(
+      JSON.stringify({
+        dimensionScores: { technical: 92, communication: 85 },
+        conceptCoverage: [
+          { concept: 'hashing', covered: true },
+          { concept: 'collision resolution', covered: true },
+        ],
+        contradictions: [],
+        flags: [],
+      }),
+    );
+    const engine = new EvaluationEngine();
+
+    const result = await engine.evaluate({ question, rubric, answer: answer(hindiAnswer), adapter });
+
+    expect(adapter.complete).toHaveBeenCalledTimes(1);
+    const request = vi.mocked(adapter.complete).mock.calls[0]![0];
+    // The candidate's exact text must reach the provider verbatim — no
+    // mojibake, no truncation, no accidental transliteration.
+    expect(request.messages.some((m) => m.content === hindiAnswer)).toBe(true);
+    expect(result.totalScore).toBeGreaterThan(0);
+  });
+
   it('still scores a hedged-but-real attempt via the adapter, not as a bare "don\'t know"', async () => {
     const adapter = fakeAdapter(
       JSON.stringify({ dimensionScores: { technical: 40, communication: 50 } }),

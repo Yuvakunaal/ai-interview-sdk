@@ -3,6 +3,7 @@ import {
   defineRubric,
   validateInterviewConfig,
   type EvaluationTurn,
+  type InterviewEventEmitter,
   type Question,
   type RubricDimensionInput,
   type SessionState,
@@ -18,11 +19,19 @@ export interface UseInterviewOptions {
   maxFollowUpDepth?: number;
   sessionTimeoutMs?: number;
   onSessionEnd?: (report: InterviewReport) => void;
+  /** Resume a session from a snapshot returned by this same hook's getSnapshot() — e.g. one restored after a page refresh or loaded back from your own backend. Only read once, on mount. */
+  initialSnapshot?: InterviewSnapshot;
 }
 
 export interface SubmitAnswerOptions {
   isSkipped?: boolean;
   isSilence?: boolean;
+}
+
+/** Everything needed to resume this exact session elsewhere — persist it (localStorage, your own backend) and pass it back as `initialSnapshot` to pick up where it left off after a refresh or disconnect. */
+export interface InterviewSnapshot {
+  flowState: SessionState;
+  transcript: TranscriptEntry[];
 }
 
 export interface UseInterviewResult {
@@ -43,6 +52,10 @@ export interface UseInterviewResult {
   endInterview: () => void;
   submitAnswer: (text: string, opts?: SubmitAnswerOptions) => Promise<void>;
   retryLastAnswer: () => Promise<void>;
+  /** A serializable snapshot of the whole session right now — see InterviewSnapshot. */
+  getSnapshot: () => InterviewSnapshot;
+  /** The underlying typed event emitter (sessionStart/sessionPause/sessionResume/sessionEnd/sessionExpired/questionAdvance/followUpGenerated/scoreComputed) — subscribe for your own analytics or logging, independent of the UI. */
+  events: InterviewEventEmitter;
 }
 
 interface PendingProcessAnswer {
@@ -67,17 +80,21 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
 
   const rubric = useMemo(() => defineRubric(options.rubric), [options.rubric]);
 
-  const [flow] = useState(
-    () =>
-      new InterviewFlowEngine({
-        questions: options.questions,
-        maxFollowUpDepth: options.maxFollowUpDepth,
-        sessionTimeoutMs: options.sessionTimeoutMs,
-      }),
-  );
+  const [flow] = useState(() => {
+    const config = {
+      questions: options.questions,
+      maxFollowUpDepth: options.maxFollowUpDepth,
+      sessionTimeoutMs: options.sessionTimeoutMs,
+    };
+    return options.initialSnapshot
+      ? InterviewFlowEngine.fromState(options.initialSnapshot.flowState, config)
+      : new InterviewFlowEngine(config);
+  });
 
   const [flowState, setFlowState] = useState<SessionState>(() => flow.getState());
-  const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
+  const [transcript, setTranscript] = useState<TranscriptEntry[]>(
+    () => options.initialSnapshot?.transcript ?? [],
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [report, setReport] = useState<InterviewReport | undefined>(undefined);
@@ -265,6 +282,11 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
     await runProcessor(pendingRef.current);
   }, [isProcessing, runProcessor]);
 
+  const getSnapshot = useCallback(
+    (): InterviewSnapshot => ({ flowState: flow.getState(), transcript }),
+    [flow, transcript],
+  );
+
   return {
     status: flowState.status,
     startedAt: flowState.startedAt,
@@ -281,5 +303,7 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
     endInterview,
     submitAnswer,
     retryLastAnswer,
+    getSnapshot,
+    events: flow.events,
   };
 }

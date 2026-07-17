@@ -409,4 +409,50 @@ describe('useInterview', () => {
     expect(onSessionEnd).toHaveBeenCalledTimes(1);
     expect(result.current.report).toBe(reportAtEnd);
   });
+
+  it('resumes an equivalent session from a snapshot taken mid-interview', async () => {
+    const processor = fakeProcessor([{ evaluation: evaluation({ totalScore: 88 }) }]);
+    const first = renderHook(() => useInterview({ questions, rubric, processor }));
+
+    act(() => first.result.current.start());
+    await act(async () => {
+      await first.result.current.submitAnswer('It uses buckets.');
+    });
+    expect(first.result.current.currentQuestion?.id).toBe('q2');
+    expect(first.result.current.transcript).toHaveLength(1);
+
+    const snapshot = first.result.current.getSnapshot();
+
+    // A brand-new hook instance (e.g. after a page refresh) reconstructed
+    // purely from the persisted snapshot, no other shared state.
+    const resumed = renderHook(() =>
+      useInterview({ questions, rubric, processor, initialSnapshot: snapshot }),
+    );
+
+    expect(resumed.result.current.status).toBe('in_progress');
+    expect(resumed.result.current.currentQuestion?.id).toBe('q2');
+    expect(resumed.result.current.transcript).toHaveLength(1);
+    expect(resumed.result.current.transcript[0]!.evaluation.totalScore).toBe(88);
+    expect(resumed.result.current.getSnapshot().flowState.sessionId).toBe(
+      first.result.current.getSnapshot().flowState.sessionId,
+    );
+  });
+
+  it('exposes the underlying event emitter and fires scoreComputed for a real answer', async () => {
+    const processor = fakeProcessor([{ evaluation: evaluation({ totalScore: 77 }) }]);
+    const { result } = renderHook(() => useInterview({ questions, rubric, processor }));
+
+    const onScoreComputed = vi.fn();
+    result.current.events.on('scoreComputed', onScoreComputed);
+
+    act(() => result.current.start());
+    await act(async () => {
+      await result.current.submitAnswer('It uses buckets.');
+    });
+
+    expect(onScoreComputed).toHaveBeenCalledTimes(1);
+    expect(onScoreComputed).toHaveBeenCalledWith(
+      expect.objectContaining({ questionId: 'q1', result: expect.objectContaining({ totalScore: 77 }) }),
+    );
+  });
 });

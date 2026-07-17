@@ -45,6 +45,10 @@
     "url": "https://github.com/Yuvakunaal/ai-interview-sdk.git",
     "directory": "packages/adapters/adapter-openai"
   },
+  "homepage": "https://github.com/Yuvakunaal/ai-interview-sdk/tree/main/packages/adapters/adapter-openai#readme",
+  "bugs": {
+    "url": "https://github.com/Yuvakunaal/ai-interview-sdk/issues"
+  },
   "keywords": [
     "ai-interview",
     "interview-sdk",
