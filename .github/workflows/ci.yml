@@ -52,7 +52,11 @@ jobs:
   changeset-check:
     name: changeset present on PRs
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    # changesets' own bot-authored "Version Packages" PR (always from this
+    # exact branch name) consumes the pending changeset(s) as part of
+    # applying them — it will never contain a new one, by design, so it must
+    # be excluded the same way dependabot PRs are.
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' && github.head_ref != 'changeset-release/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v7
