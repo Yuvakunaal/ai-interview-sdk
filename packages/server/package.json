@@ -1,6 +1,6 @@
 {
   "name": "@interview-sdk/server",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Production-mode server-side evaluation, scoring, and signing for AI-powered interviews — keeps AI keys and score integrity off the client.",
   "license": "MIT",
   "type": "module",
