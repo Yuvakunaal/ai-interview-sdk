@@ -1,6 +1,6 @@
 {
   "name": "@interview-sdk/cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Scaffolding, Interview Simulator, and Bias & Consistency Testing Harness for AI-powered interviews.",
   "license": "MIT",
   "type": "module",
