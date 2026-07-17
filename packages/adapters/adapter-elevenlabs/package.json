@@ -1,6 +1,6 @@
 {
   "name": "@interview-sdk/adapter-elevenlabs",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "ElevenLabs voice (text-to-speech) provider adapter for @interview-sdk/core.",
   "license": "MIT",
   "type": "module",

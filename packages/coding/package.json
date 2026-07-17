@@ -1,6 +1,6 @@
 {
   "name": "@interview-sdk/coding",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Sandboxed code execution and evaluation for Coding Interview Mode, isolated in its own package so a sandbox vulnerability can't compromise the rest of the SDK.",
   "license": "MIT",
   "type": "module",

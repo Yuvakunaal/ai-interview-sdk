@@ -1,7 +1,7 @@
 {
   "name": "@interview-sdk/example-server-mode-nextjs",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "description": "Runnable Next.js example of Server Mode: <InterviewWidget mode=\"server\" /> talking to an API route built with @interview-sdk/server.",
   "scripts": {
