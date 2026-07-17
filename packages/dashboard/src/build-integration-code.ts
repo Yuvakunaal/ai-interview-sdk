@@ -31,15 +31,49 @@ export function buildIntegrationCode({
     ? `
       roleTitle="${roleTitle.replace(/"/g, '\\"')}"`
     : '';
+  // Proxies through your own backend rather than constructing a voice
+  // adapter here — this file is always Server Mode, and calling a voice
+  // provider directly from the browser would expose that key client-side,
+  // undermining the exact guarantee Server Mode exists for. Mirrors
+  // packages/examples/server-mode-nextjs's own voice-client.ts pattern.
   const voiceProps = hasVoice
     ? `
-      synthesize={voiceProvider.synthesize.bind(voiceProvider)}
-      transcribe={async (audio) => (await voiceProvider.transcribe(await audio.arrayBuffer())).text}`
+      synthesize={async (text) => {
+        const response = await fetch('/api/voice/synthesize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+        const audio = await response.arrayBuffer();
+        return { audio, mimeType: response.headers.get('Content-Type') ?? 'audio/mpeg' };
+      }}
+      transcribe={async (audio) => {
+        const response = await fetch('/api/voice/transcribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream' },
+          body: audio,
+        });
+        const { text } = await response.json();
+        return text;
+      }}`
+    : '';
+
+  const voiceRoutesNote = hasVoice
+    ? `
+// \`interview-sdk init\` scaffolds /api/interview/answer, but not the two
+// voice routes below — you write those yourself. Each just wraps a real
+// voice adapter (@interview-sdk/adapter-deepgram or
+// @interview-sdk/adapter-elevenlabs) server-side: POST /api/voice/synthesize
+// takes { text }, returns synthesized audio bytes; POST /api/voice/transcribe
+// takes raw audio bytes, returns { text }. See
+// packages/examples/server-mode-nextjs/app/api/voice in the SDK repo for a
+// complete, working reference implementation of both.
+`
     : '';
 
   return `import { InterviewWidget } from '@interview-sdk/react';
 import '@interview-sdk/react/styles.css';
-
+${voiceRoutesNote}
 const questions = ${JSON.stringify(questions, null, 2)};
 
 const rubric = ${JSON.stringify(rubric, null, 2)};

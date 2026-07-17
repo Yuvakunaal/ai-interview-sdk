@@ -46,25 +46,37 @@ describe('buildIntegrationCode', () => {
     expect(code).toContain('sessionTimeoutMs={1200000}');
   });
 
-  it('includes voice props for "voice" and "hybrid" modes, correctly adapting transcribe\'s shape', () => {
-    // VoiceProviderAdapter.transcribe takes an ArrayBuffer/Uint8Array and
-    // returns a TranscriptResult, but InterviewWidget's transcribe prop is
-    // (audio: Blob) => Promise<string> — a direct pass-through of
-    // voiceProvider.transcribe would be a type/runtime mismatch, so the
-    // generated code must wrap it instead.
+  it('includes voice props for "voice" and "hybrid" modes that proxy through the developer\'s own backend', () => {
+    // This is always Server Mode output — constructing a voice adapter (or
+    // referencing one, e.g. "voiceProvider") directly here would either be
+    // an undefined-variable bug or, if it were defined, expose that voice
+    // key client-side, undermining the whole point of Server Mode. The
+    // generated synthesize/transcribe must be real, self-contained fetch
+    // calls to the developer's own /api/voice/* routes, matching
+    // packages/examples/server-mode-nextjs's proven voice-client.ts pattern.
     for (const runtimeMode of ['voice', 'hybrid'] as const) {
       const code = buildIntegrationCode(options({ runtimeMode }));
-      expect(code).toContain('synthesize={voiceProvider.synthesize.bind(voiceProvider)}');
-      expect(code).toContain(
-        'transcribe={async (audio) => (await voiceProvider.transcribe(await audio.arrayBuffer())).text}',
-      );
+      expect(code).not.toContain('voiceProvider');
+      expect(code).toContain("fetch('/api/voice/synthesize'");
+      expect(code).toContain("fetch('/api/voice/transcribe'");
+      expect(code).toContain('synthesize={async (text) =>');
+      expect(code).toContain('transcribe={async (audio) =>');
     }
   });
 
-  it('omits voice props entirely for "text" mode', () => {
+  it('notes that the two voice routes need to be hand-written, since interview-sdk init only scaffolds the answer route', () => {
+    for (const runtimeMode of ['voice', 'hybrid'] as const) {
+      const code = buildIntegrationCode(options({ runtimeMode }));
+      expect(code).toContain('interview-sdk init` scaffolds /api/interview/answer');
+      expect(code).toContain('server-mode-nextjs/app/api/voice');
+    }
+  });
+
+  it('omits voice props and the voice-routes note entirely for "text" mode', () => {
     const code = buildIntegrationCode(options({ runtimeMode: 'text' }));
     expect(code).not.toContain('synthesize=');
     expect(code).not.toContain('transcribe=');
+    expect(code).not.toContain('/api/voice/');
   });
 
   it('omits roleTitle when not provided', () => {
