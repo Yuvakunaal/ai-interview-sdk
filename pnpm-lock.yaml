@@ -93,8 +93,8 @@ importers:
         specifier: workspace:*
         version: link:../../core
       openai:
-        specifier: ^6.45.0
-        version: 6.45.0(ws@8.21.0)(zod@4.4.3)
+        specifier: ^6.48.0
+        version: 6.48.0(ws@8.21.0)(zod@4.4.3)
 
   packages/cli:
     dependencies:
@@ -208,8 +208,8 @@ importers:
         specifier: workspace:*
         version: link:../../react
       openai:
-        specifier: ^6.45.0
-        version: 6.45.0(ws@8.21.0)(zod@4.4.3)
+        specifier: ^6.48.0
+        version: 6.48.0(ws@8.21.0)(zod@4.4.3)
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -2762,8 +2762,8 @@ packages:
   oniguruma-to-es@4.3.6:
     resolution: {integrity: sha512-csuQ9x3Yr0cEIs/Zgx/OEt9iBw9vqIunAPQkx19R/fiMq2oGVTgcMqO/V3Ybqefr1TBvosI6jU539ksaBULJyA==}
 
-  openai@6.45.0:
-    resolution: {integrity: sha512-5DQVNErssk0afNpTTHUm/qZPU4iKR9OYdNid8Ib4puq4gHNNvGWZht2zY4h9a8JMF949Ik6m8gQutllVPbjdnw==}
+  openai@6.48.0:
+    resolution: {integrity: sha512-KhVp+FyV50QrXNextvL9hIU5l6ox5HYuKQjGVk7lIqprgJol90+dQXWONV6S1lRWsKA1bXjrow8RsUT14M1hNA==}
     peerDependencies:
       '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
       '@smithy/hash-node': '>=4.3.0 <5'
@@ -6032,7 +6032,7 @@ snapshots:
       regex: 6.1.0
       regex-recursion: 6.0.2
 
-  openai@6.45.0(ws@8.21.0)(zod@4.4.3):
+  openai@6.48.0(ws@8.21.0)(zod@4.4.3):
     optionalDependencies:
       ws: 8.21.0
       zod: 4.4.3
