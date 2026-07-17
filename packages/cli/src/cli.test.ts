@@ -1,8 +1,10 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
+import { mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { main } from './cli.js';
+import { isMainModule, main } from './cli.js';
 
 let dir: string;
 let logSpy: ReturnType<typeof vi.spyOn>;
@@ -209,5 +211,46 @@ describe('main — pack', () => {
   it('returns 1 for an unknown pack subcommand', async () => {
     expect(await main(['pack', 'nonexistent'])).toBe(1);
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown pack subcommand'));
+  });
+});
+
+describe('isMainModule', () => {
+  it('recognizes itself as the main module when invoked through a symlink (the real npm/npx bin case)', async () => {
+    // This is exactly how npm/npx run any CLI: node_modules/.bin/<name> is
+    // always a symlink to the real file. Node resolves import.meta.url through
+    // the symlink to the real (fully realpath'd) path, but argv[1] stays the
+    // symlink path as invoked — isMainModule must resolve argv1 the same way
+    // to match. (metaUrl is built via realpathSync too, mirroring what Node
+    // itself does — on macOS, dir itself already lives under a symlink
+    // (/var -> /private/var), so even the "real" file needs resolving.)
+    const realFile = join(dir, 'real-cli.js');
+    await writeFile(realFile, '// stand-in for a built cli.js');
+    const symlinkPath = join(dir, 'bin-shim');
+    await symlink(realFile, symlinkPath);
+
+    const metaUrl = pathToFileURL(realpathSync(realFile)).href;
+    expect(isMainModule(symlinkPath, metaUrl)).toBe(true);
+  });
+
+  it('does not falsely match an unrelated invoking script (e.g. a test runner importing main() directly)', async () => {
+    const realFile = join(dir, 'real-cli.js');
+    await writeFile(realFile, '// stand-in for a built cli.js');
+    const unrelatedScript = join(dir, 'vitest-runner.js');
+    await writeFile(unrelatedScript, '// stand-in for whatever imported this module in a test');
+
+    const metaUrl = pathToFileURL(realpathSync(realFile)).href;
+    expect(isMainModule(unrelatedScript, metaUrl)).toBe(false);
+  });
+
+  it('returns false when argv1 is undefined (module imported, not run as a script)', async () => {
+    const realFile = join(dir, 'real-cli.js');
+    await writeFile(realFile, '// stand-in for a built cli.js');
+    expect(isMainModule(undefined, pathToFileURL(realpathSync(realFile)).href)).toBe(false);
+  });
+
+  it('still matches a direct, non-symlinked invocation', async () => {
+    const realFile = join(dir, 'direct-cli.js');
+    await writeFile(realFile, '// stand-in for a built cli.js');
+    expect(isMainModule(realFile, pathToFileURL(realpathSync(realFile)).href)).toBe(true);
   });
 });

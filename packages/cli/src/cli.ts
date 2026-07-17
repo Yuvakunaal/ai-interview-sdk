@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
+import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { CliUsageError } from './errors.js';
 import { loadInterviewCliConfig } from './config-loader.js';
@@ -209,8 +210,19 @@ export async function main(argv: string[]): Promise<number> {
   }
 }
 
-const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
-if (isMainModule) {
+/**
+ * argv1 stays as the literal path a script was invoked with, but npm/npx
+ * always invoke this file through a symlink (node_modules/.bin/interview-sdk)
+ * — and metaUrl (import.meta.url) is Node's *resolved* (symlink-followed)
+ * URL for the module. Comparing them without resolving argv1 the same way
+ * means this never matches for any real install, only a direct
+ * `node dist/cli.js` call — silently skipping main() for every actual user.
+ */
+export function isMainModule(argv1: string | undefined, metaUrl: string): boolean {
+  return argv1 !== undefined && metaUrl === pathToFileURL(realpathSync(argv1)).href;
+}
+
+if (isMainModule(process.argv[1], import.meta.url)) {
   main(process.argv.slice(2)).then((exitCode) => {
     process.exitCode = exitCode;
   });
