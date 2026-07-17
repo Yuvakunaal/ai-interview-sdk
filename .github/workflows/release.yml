@@ -2,9 +2,10 @@ name: Release
 
 # Requires an NPM_TOKEN repo secret (npmjs.com -> Access Tokens -> Generate
 # New Token -> Automation, added under Settings -> Secrets and variables ->
-# Actions) before the "publish to npm" step can succeed. Until that secret
-# exists, this still safely opens/updates a "Version Packages" PR on every
-# push to main with a pending changeset — it just can't publish yet.
+# Actions) before this can actually publish. Until that secret exists, the
+# publish step below is skipped outright (a clean, green no-op notice)
+# rather than attempting `changeset publish` and failing loudly with
+# ENEEDAUTH on every single push to main.
 on:
   push:
     branches: [main]
@@ -42,9 +43,15 @@ jobs:
         run: pnpm build
 
       - name: Create Release Pull Request or publish to npm
+        if: ${{ secrets.NPM_TOKEN != '' }}
         uses: changesets/action@v1
         with:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Skip publish (no NPM_TOKEN configured yet)
+        if: ${{ secrets.NPM_TOKEN == '' }}
+        run: |
+          echo "::notice::NPM_TOKEN secret not set — skipping npm publish. Add it under Settings > Secrets and variables > Actions to enable automated releases (see the comment at the top of this workflow file)."
