@@ -6,8 +6,9 @@ import type {
 } from '@interview-sdk/core';
 import { defineRubric } from '@interview-sdk/core';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { useInterview, type UseInterviewResult } from '../hooks/useInterview.js';
+import { useInterview, type InterviewSnapshot, type UseInterviewResult } from '../hooks/useInterview.js';
 import type { InterviewReport } from '../hooks/build-report.js';
+import { useIntegritySignals } from '../hooks/use-integrity-signals.js';
 import { ClientModeProcessor } from '../processor/client-mode-processor.js';
 import { ServerModeProcessor } from '../processor/server-mode-processor.js';
 import { InterviewErrorBoundary } from './InterviewErrorBoundary.js';
@@ -17,6 +18,38 @@ import { LiveSignals } from './LiveSignals.js';
 import { QuestionCard } from './QuestionCard.js';
 import { ReportCard } from './ReportCard.js';
 import { TranscriptChat } from './TranscriptChat.js';
+
+/**
+ * Best-effort only — a full disk, private-browsing storage lockout, or
+ * disabled localStorage must never break the interview itself, so every
+ * failure here is swallowed and treated as "nothing to resume from."
+ */
+function readPersistedSnapshot(key: string | undefined): InterviewSnapshot | undefined {
+  if (!key || typeof window === 'undefined') return undefined;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return undefined;
+    return JSON.parse(raw) as InterviewSnapshot;
+  } catch {
+    return undefined;
+  }
+}
+
+function writePersistedSnapshot(key: string, snapshot: InterviewSnapshot): void {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(snapshot));
+  } catch {
+    // Best-effort — see readPersistedSnapshot above.
+  }
+}
+
+function clearPersistedSnapshot(key: string): void {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Best-effort — see readPersistedSnapshot above.
+  }
+}
 
 export type InterviewMode = 'client' | 'server';
 
@@ -63,6 +96,28 @@ export interface InterviewWidgetProps {
    * this happens; use this to also log it or notify your own backend.
    */
   onExportError?: (error: Error, format: 'pdf' | 'csv') => void;
+  /**
+   * When set, automatically saves the session to localStorage under this
+   * key after every state change, and resumes from it on mount — a page
+   * refresh or accidental tab close picks back up on the same question with
+   * the same transcript, no manual getSnapshot()/initialSnapshot wiring
+   * needed. Cleared automatically once the interview completes or expires.
+   * Omit for a fresh session on every mount (the previous default, still
+   * fully supported). Use a key that's unique per candidate+interview (e.g.
+   * including a session or candidate id) — otherwise two different
+   * candidates on the same browser profile would resume each other's answers.
+   */
+  persistKey?: string;
+  /**
+   * Tracks two low-risk, non-biometric integrity signals while the
+   * interview is active — how many times the tab lost focus, and how many
+   * times the candidate pasted into an answer — and attaches them to the
+   * final report as `integritySignals`. Off by default; if you turn this
+   * on, disclose it to candidates (most platforms that track tab-switching
+   * say so up front). These are signals for a human reviewer to weigh in
+   * context, never an automated cheating verdict.
+   */
+  trackIntegritySignals?: boolean;
   /** Extra class name(s) added to the root element, alongside `isdk-widget`. */
   className?: string;
   /**
@@ -175,6 +230,8 @@ function InterviewWidgetInner({
   roleTitle,
   candidateName,
   onExportError,
+  persistKey,
+  trackIntegritySignals = false,
   className,
   style,
 }: InterviewWidgetProps) {
@@ -200,6 +257,13 @@ function InterviewWidgetInner({
   // constant, faked "always recording" claim.
   const [isRecording, setIsRecording] = useState(false);
 
+  // Read exactly once, on mount — matching initialSnapshot's own contract in
+  // useInterview. persistKey changing on an already-mounted widget does not
+  // re-trigger a resume; that's a config change, not a runtime event.
+  const [initialSnapshot] = useState(() => readPersistedSnapshot(persistKey));
+
+  const integrity = useIntegritySignals(trackIntegritySignals);
+
   const interview: UseInterviewResult = useInterview({
     questions,
     rubric,
@@ -207,7 +271,24 @@ function InterviewWidgetInner({
     maxFollowUpDepth,
     sessionTimeoutMs,
     onSessionEnd,
+    ...(initialSnapshot ? { initialSnapshot } : {}),
+    ...(trackIntegritySignals ? { getIntegritySignals: integrity.getSnapshot } : {}),
   });
+
+  useEffect(() => {
+    integrity.setActive(interview.status === 'in_progress');
+  }, [interview.status, integrity]);
+
+  const { status: interviewStatus, transcript: interviewTranscript, getSnapshot } = interview;
+  useEffect(() => {
+    if (!persistKey) return;
+    if (interviewStatus === 'not_started') return;
+    if (interviewStatus === 'completed' || interviewStatus === 'expired') {
+      clearPersistedSnapshot(persistKey);
+      return;
+    }
+    writePersistedSnapshot(persistKey, getSnapshot());
+  }, [persistKey, interviewStatus, interviewTranscript, getSnapshot]);
 
   // Computed after useInterview so its config validation (which collects
   // every issue into one clear error) is what a bad rubric surfaces as,
@@ -358,6 +439,7 @@ function InterviewWidgetInner({
                 elapsedFraction={elapsedFraction}
                 onPause={interview.pause}
                 pauseDisabled={interview.status !== 'in_progress'}
+                {...(trackIntegritySignals ? { onAnswerPaste: integrity.recordPaste } : {})}
               />
             </div>
 

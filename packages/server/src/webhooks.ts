@@ -71,6 +71,8 @@ export interface WebhookDispatcherConfig {
   sleep?: (ms: number) => Promise<void>;
   maxAttempts?: number;
   baseDelayMs?: number;
+  /** Aborts a single delivery attempt that hangs longer than this, treating it as a retryable failure rather than blocking forever. Defaults to 10 seconds. */
+  timeoutMs?: number;
   /** Called after every failed attempt, including the last. */
   onDeliveryFailure?: (error: unknown, attempt: number) => void;
 }
@@ -96,6 +98,7 @@ export class WebhookDispatcher {
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly maxAttempts: number;
   private readonly baseDelayMs: number;
+  private readonly timeoutMs: number;
   private readonly onDeliveryFailure: ((error: unknown, attempt: number) => void) | undefined;
 
   constructor(config: WebhookDispatcherConfig) {
@@ -105,6 +108,7 @@ export class WebhookDispatcher {
     this.sleep = config.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
     this.maxAttempts = config.maxAttempts ?? 5;
     this.baseDelayMs = config.baseDelayMs ?? 500;
+    this.timeoutMs = config.timeoutMs ?? 10_000;
     this.onDeliveryFailure = config.onDeliveryFailure;
   }
 
@@ -118,6 +122,8 @@ export class WebhookDispatcher {
 
     let lastError: unknown;
     for (let attempt = 1; attempt <= this.maxAttempts; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
       try {
         const response = await this.fetchImpl(this.url, {
           method: 'POST',
@@ -127,13 +133,19 @@ export class WebhookDispatcher {
             'Interview-Sdk-Idempotency-Key': idempotencyKey,
           },
           body: rawBody,
+          signal: controller.signal,
         });
         if (response.ok) {
           return { delivered: true, attempts: attempt, idempotencyKey };
         }
         lastError = new Error(`Webhook endpoint responded with ${response.status}`);
       } catch (error) {
-        lastError = error;
+        lastError =
+          error instanceof Error && error.name === 'AbortError'
+            ? new Error(`Webhook delivery timed out after ${this.timeoutMs}ms`)
+            : error;
+      } finally {
+        clearTimeout(timeoutId);
       }
 
       this.onDeliveryFailure?.(lastError, attempt);

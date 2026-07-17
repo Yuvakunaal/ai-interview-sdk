@@ -134,6 +134,17 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
         </section>
       )}
 
+      {report.integritySignals && (
+        <section className="isdk-report-card__section">
+          <h3 className="isdk-report-card__section-title">Session integrity</h3>
+          <p className="isdk-report-card__integrity-note">
+            Tab switches: {report.integritySignals.tabSwitchCount} · Pastes into an answer:{' '}
+            {report.integritySignals.pasteEvents.length}. Informational only — weigh these in
+            context, not as an automated verdict.
+          </p>
+        </section>
+      )}
+
       <TranscriptViewer transcript={report.transcript} />
 
       {fallback && (

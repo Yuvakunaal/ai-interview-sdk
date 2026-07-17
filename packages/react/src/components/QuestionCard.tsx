@@ -44,6 +44,8 @@ export interface QuestionCardProps {
   /** Pauses the session. Omit to hide the Pause control. Available in every mode, voice or text-only. */
   onPause?: () => void;
   pauseDisabled?: boolean;
+  /** Notified with the character length of whatever was just pasted into the answer field — e.g. to feed InterviewWidget's integrity-signal tracking. Omit to not track pastes at all. */
+  onAnswerPaste?: (pastedLength: number) => void;
 }
 
 type VoiceTurn = 'ai_speaking' | 'candidate_turn';
@@ -111,6 +113,7 @@ function QuestionCardBody({
   elapsedFraction,
   onPause,
   pauseDisabled = false,
+  onAnswerPaste,
 }: QuestionCardProps) {
   const [answerText, setAnswerText] = useState('');
   const [voiceTurn, setVoiceTurn] = useState<VoiceTurn>(() => (synthesize ? 'ai_speaking' : 'candidate_turn'));
@@ -280,6 +283,11 @@ function QuestionCardBody({
             id={textareaId}
             value={answerText}
             onChange={(event) => setAnswerText(event.target.value)}
+            onPaste={
+              onAnswerPaste
+                ? (event) => onAnswerPaste(event.clipboardData.getData('text').length)
+                : undefined
+            }
             disabled={isBusy}
             rows={6}
           />

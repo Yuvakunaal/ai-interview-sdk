@@ -104,4 +104,22 @@ describe('buildReport', () => {
     expect(report.sessionId).toBe('session-42');
     expect(report.transcript).toBe(transcript);
   });
+
+  it('omits integritySignals entirely when not provided', () => {
+    const report = buildReport('session-1', rubric, [entry()]);
+    expect(report).not.toHaveProperty('integritySignals');
+  });
+
+  it('attaches integritySignals when provided', () => {
+    const report = buildReport('session-1', rubric, [entry()], {
+      tabSwitchCount: 2,
+      tabSwitchTimestamps: [100, 200],
+      pasteEvents: [{ length: 500, timestamp: 150 }],
+    });
+    expect(report.integritySignals).toEqual({
+      tabSwitchCount: 2,
+      tabSwitchTimestamps: [100, 200],
+      pasteEvents: [{ length: 500, timestamp: 150 }],
+    });
+  });
 });

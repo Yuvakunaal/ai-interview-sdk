@@ -438,6 +438,54 @@ describe('useInterview', () => {
     );
   });
 
+  it('resuming a snapshot whose sessionTimeoutMs has already elapsed shows expired immediately, not in_progress', async () => {
+    const processor = fakeProcessor([{ evaluation: evaluation() }]);
+    const first = renderHook(() =>
+      useInterview({ questions, rubric, processor, sessionTimeoutMs: 1000 }),
+    );
+    act(() => first.result.current.start());
+    const staleSnapshot = first.result.current.getSnapshot();
+    staleSnapshot.flowState.updatedAt = Date.now() - 5000;
+
+    const resumed = renderHook(() =>
+      useInterview({
+        questions,
+        rubric,
+        processor,
+        sessionTimeoutMs: 1000,
+        initialSnapshot: staleSnapshot,
+      }),
+    );
+
+    // Must read as expired on the very first render, not just once the
+    // candidate tries (and fails) to submit another answer.
+    expect(resumed.result.current.status).toBe('expired');
+  });
+
+  it('attaches getIntegritySignals() output to the report on completion', async () => {
+    const processor = fakeProcessor([{ evaluation: evaluation() }]);
+    const getIntegritySignals = vi.fn(() => ({
+      tabSwitchCount: 3,
+      tabSwitchTimestamps: [1, 2, 3],
+      pasteEvents: [{ length: 42, timestamp: 5 }],
+    }));
+    const { result } = renderHook(() =>
+      useInterview({ questions, rubric, processor, getIntegritySignals }),
+    );
+
+    act(() => result.current.start());
+    await act(async () => {
+      await result.current.submitAnswer('It uses buckets.');
+    });
+    act(() => result.current.endInterview());
+
+    expect(result.current.report?.integritySignals).toEqual({
+      tabSwitchCount: 3,
+      tabSwitchTimestamps: [1, 2, 3],
+      pasteEvents: [{ length: 42, timestamp: 5 }],
+    });
+  });
+
   it('exposes the underlying event emitter and fires scoreComputed for a real answer', async () => {
     const processor = fakeProcessor([{ evaluation: evaluation({ totalScore: 77 }) }]);
     const { result } = renderHook(() => useInterview({ questions, rubric, processor }));

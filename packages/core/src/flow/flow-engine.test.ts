@@ -254,6 +254,39 @@ describe('InterviewFlowEngine session expiration', () => {
 
     expect(() => resumedEngine.submitAnswer({ text: 'too late' })).toThrow(SessionExpiredError);
   });
+
+  it('refreshExpiry() reports an already-expired resumed session as expired without waiting for a mutating call', () => {
+    const engine = new InterviewFlowEngine({ questions, sessionTimeoutMs: 1000 });
+    engine.start();
+    const staleState: SessionState = { ...engine.getState(), updatedAt: Date.now() - 5000 };
+    const resumedEngine = InterviewFlowEngine.fromState(staleState, {
+      questions,
+      sessionTimeoutMs: 1000,
+    });
+
+    // Before any mutating call, getState() would still (misleadingly) say
+    // "in_progress" — refreshExpiry() is the read-only way to force the
+    // real check immediately after resuming from a snapshot.
+    expect(resumedEngine.getState().status).toBe('in_progress');
+
+    const events: string[] = [];
+    resumedEngine.events.on('sessionExpired', () => events.push('sessionExpired'));
+
+    const refreshed = resumedEngine.refreshExpiry();
+
+    expect(refreshed.status).toBe('expired');
+    expect(resumedEngine.getState().status).toBe('expired');
+    expect(events).toEqual(['sessionExpired']);
+  });
+
+  it('refreshExpiry() is a no-op on a session that is not actually expired', () => {
+    const engine = new InterviewFlowEngine({ questions, sessionTimeoutMs: 60_000 });
+    engine.start();
+
+    const refreshed = engine.refreshExpiry();
+
+    expect(refreshed.status).toBe('in_progress');
+  });
 });
 
 describe('InterviewFlowEngine persistence (auto-save / resume after refresh)', () => {

@@ -70,8 +70,12 @@ live yet — run it locally (`pnpm --filter @interview-sdk/docs dev`, then open
   ElevenLabs) behind one interface, with automatic failover across them.
 - **Multi-language, actually tested** — Hindi and Telugu bare-admission
   detection is exercised in the test suite, not just claimed in a doc.
-- **Session persistence and a typed event stream** for resuming after a
-  refresh and piping activity into your own analytics.
+- **Survives a refresh with one prop.** `persistKey` auto-saves and resumes
+  the exact session — same question, same transcript — plus a typed event
+  stream for piping activity into your own analytics.
+- **Opt-in integrity signals, not surveillance.** `trackIntegritySignals`
+  reports tab-switch and paste counts on the final report — never webcam,
+  gesture, or emotion scoring, which this SDK deliberately doesn't do.
 - **Zero-Infra, for real.** No maintainer-run service, ever — not the
   interview, not the simulator, not the CI gate. Your infrastructure the
   whole way down.

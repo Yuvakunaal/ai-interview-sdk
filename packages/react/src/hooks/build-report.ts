@@ -8,6 +8,22 @@ export interface TranscriptEntry {
   evaluation: EvaluationResult;
 }
 
+/**
+ * Low-risk, opt-in integrity signals — tab-switch and paste-into-answer
+ * counts, nothing biometric or behavioral. These are observations for a
+ * human reviewer to weigh in context, not an automated cheating verdict; if
+ * you track this, disclose it to candidates (most interview platforms that
+ * track tab-switching say so up front).
+ */
+export interface IntegritySignals {
+  /** Number of times the browser tab/window lost visibility while the interview was in progress. */
+  tabSwitchCount: number;
+  /** Wall-clock timestamp (ms since epoch) of each tab-switch-away event. */
+  tabSwitchTimestamps: number[];
+  /** Every paste event into an answer field — character length of what was pasted, and when. */
+  pasteEvents: Array<{ length: number; timestamp: number }>;
+}
+
 export interface InterviewReport {
   sessionId: string;
   totalScore: number;
@@ -16,6 +32,8 @@ export interface InterviewReport {
   weaknesses: string[];
   missedConcepts: string[];
   transcript: TranscriptEntry[];
+  /** Only present when the caller opted into tracking (e.g. InterviewWidget's trackIntegritySignals prop). */
+  integritySignals?: IntegritySignals;
 }
 
 const STRENGTH_THRESHOLD = 75;
@@ -31,6 +49,7 @@ export function buildReport(
   sessionId: string,
   rubric: Rubric,
   transcript: TranscriptEntry[],
+  integritySignals?: IntegritySignals,
 ): InterviewReport {
   const dimensionAverages: Record<string, number> = {};
   const dimensionsWithData = new Set<string>();
@@ -76,5 +95,6 @@ export function buildReport(
     weaknesses,
     missedConcepts,
     transcript,
+    ...(integritySignals ? { integritySignals } : {}),
   };
 }

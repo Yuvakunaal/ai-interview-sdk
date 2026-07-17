@@ -118,6 +118,51 @@ describe('WebhookDispatcher', () => {
     expect(result.attempts).toBe(2);
   });
 
+  it('aborts and retries a delivery attempt that hangs past timeoutMs, rather than blocking forever', async () => {
+    const fetchImpl = vi.fn(
+      (_url: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init!.signal!.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        }),
+    );
+    const sleep = vi.fn(async () => {});
+    const onDeliveryFailure = vi.fn();
+    const dispatcher = new WebhookDispatcher({
+      url: 'https://dev.example/webhook',
+      secret: 's',
+      fetchImpl,
+      sleep,
+      timeoutMs: 5,
+      maxAttempts: 2,
+      onDeliveryFailure,
+    });
+
+    const result = await dispatcher.send('sessionEnd', {});
+
+    expect(result.delivered).toBe(false);
+    expect(result.attempts).toBe(2);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(onDeliveryFailure.mock.calls[0]![0].message).toMatch(/timed out after 5ms/);
+  });
+
+  it('passes an AbortSignal through to fetchImpl on every attempt', async () => {
+    const fetchImpl = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      expect(init!.signal).toBeInstanceOf(AbortSignal);
+      expect(init!.signal!.aborted).toBe(false);
+      return new Response(null, { status: 200 });
+    });
+    const dispatcher = new WebhookDispatcher({
+      url: 'https://dev.example/webhook',
+      secret: 's',
+      fetchImpl,
+    });
+
+    await dispatcher.send('sessionEnd', {});
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
   it('generates an idempotency key when none is provided', async () => {
     const fetchImpl = vi.fn(async () => new Response(null, { status: 200 }));
     const dispatcher = new WebhookDispatcher({

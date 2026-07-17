@@ -25,6 +25,7 @@ function fakeAdapter(responses: string[]): AIProviderAdapter {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  window.localStorage.clear();
 });
 
 describe('InterviewWidget', () => {
@@ -590,5 +591,141 @@ describe('InterviewWidget', () => {
 
     await waitFor(() => expect(screen.getAllByText('Alex Chen').length).toBeGreaterThan(1));
     expect(screen.queryByText('You')).not.toBeInTheDocument();
+  });
+
+  it('resumes mid-interview on remount when persistKey is set (simulating a page refresh)', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter([
+      JSON.stringify({ dimensionScores: { technical: 90 } }),
+      JSON.stringify({ dimensionScores: { technical: 95 } }),
+    ]);
+    const { unmount } = render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        persistKey="candidate-42"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    await user.type(screen.getByLabelText('Your answer'), 'It uses buckets.');
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Explain binary search.' })).toBeInTheDocument(),
+    );
+
+    // Tear down the whole component tree — nothing but localStorage survives.
+    unmount();
+
+    render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        persistKey="candidate-42"
+      />,
+    );
+
+    // Picks back up on question 2 — never shows the lobby again.
+    expect(screen.getByRole('heading', { name: 'Explain binary search.' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start interview' })).not.toBeInTheDocument();
+    expect(screen.getByText('It uses buckets.')).toBeInTheDocument();
+  });
+
+  it('clears the persisted snapshot once the interview completes', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter([JSON.stringify({ dimensionScores: { technical: 90 } })]);
+    render(
+      <InterviewWidget
+        questions={[questions[0]!]}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        persistKey="candidate-99"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    expect(window.localStorage.getItem('candidate-99')).not.toBeNull();
+
+    await user.type(screen.getByLabelText('Your answer'), 'It uses buckets.');
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Interview Report' })).toBeInTheDocument(),
+    );
+    expect(window.localStorage.getItem('candidate-99')).toBeNull();
+  });
+
+  it('starts fresh instead of crashing when the persisted snapshot is corrupted', () => {
+    window.localStorage.setItem('candidate-corrupt', 'not valid json{{{');
+    const adapter = fakeAdapter(['{}']);
+    render(
+      <InterviewWidget
+        questions={questions}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        persistKey="candidate-corrupt"
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Start interview' })).toBeInTheDocument();
+  });
+
+  it('attaches tab-switch and paste integrity signals to the final report when trackIntegritySignals is set', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter([JSON.stringify({ dimensionScores: { technical: 90 } })]);
+    const onSessionEnd = vi.fn();
+    render(
+      <InterviewWidget
+        questions={[questions[0]!]}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        onSessionEnd={onSessionEnd}
+        trackIntegritySignals
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+
+    const textarea = screen.getByLabelText('Your answer');
+    await user.click(textarea);
+    await user.paste('a suspiciously complete answer');
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }));
+
+    await waitFor(() => expect(onSessionEnd).toHaveBeenCalledTimes(1));
+    const report = onSessionEnd.mock.calls[0]![0];
+    expect(report.integritySignals.tabSwitchCount).toBe(1);
+    expect(report.integritySignals.pasteEvents).toHaveLength(1);
+  });
+
+  it('does not attach integritySignals to the report when trackIntegritySignals is left off (the default)', async () => {
+    const user = userEvent.setup();
+    const adapter = fakeAdapter([JSON.stringify({ dimensionScores: { technical: 90 } })]);
+    const onSessionEnd = vi.fn();
+    render(
+      <InterviewWidget
+        questions={[questions[0]!]}
+        rubric={rubric}
+        mode="client"
+        adapter={adapter}
+        onSessionEnd={onSessionEnd}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Start interview' }));
+    await user.type(screen.getByLabelText('Your answer'), 'It uses buckets.');
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }));
+
+    await waitFor(() => expect(onSessionEnd).toHaveBeenCalledTimes(1));
+    expect(onSessionEnd.mock.calls[0]![0]).not.toHaveProperty('integritySignals');
   });
 });

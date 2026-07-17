@@ -130,6 +130,35 @@ describe('QuestionCard', () => {
     expect(textarea).toHaveValue('');
   });
 
+  it('reports the pasted length via onAnswerPaste when provided', async () => {
+    const user = userEvent.setup();
+    const onAnswerPaste = vi.fn();
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        onAnswerPaste={onAnswerPaste}
+      />,
+    );
+
+    await user.click(screen.getByLabelText('Your answer'));
+    await user.paste('a suspiciously complete answer');
+
+    expect(onAnswerPaste).toHaveBeenCalledWith('a suspiciously complete answer'.length);
+  });
+
+  it('does not throw on paste when onAnswerPaste is not provided', async () => {
+    const user = userEvent.setup();
+    render(
+      <QuestionCard prompt="Explain hash maps." questionNumber={1} totalQuestions={1} onSubmit={vi.fn()} />,
+    );
+
+    await user.click(screen.getByLabelText('Your answer'));
+    await expect(user.paste('some text')).resolves.not.toThrow();
+  });
+
   it('submits an empty string when the candidate submits without typing anything', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();

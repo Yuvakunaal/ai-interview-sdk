@@ -1654,6 +1654,12 @@ body:has(.isdk-widget) {
   margin-bottom: 1.25rem;
 }
 
+.isdk-report-card__integrity-note {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--isdk-ink-soft);
+}
+
 .isdk-report-card__export-notice {
   margin: 1.25rem 0 0;
   padding: 0.7rem 0.9rem;

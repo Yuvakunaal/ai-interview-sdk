@@ -16,11 +16,33 @@ export default function SessionPersistenceAndEvents() {
 
       <h2>Resuming after a refresh or disconnect</h2>
       <p>
-        <code>useInterview</code> returns <code>getSnapshot()</code> — a plain, serializable object
-        covering the whole session (flow state and transcript). Persist it wherever makes sense
-        (<code>localStorage</code> for a same-device refresh, your own backend for a real
-        disconnect), and pass it back in as <code>initialSnapshot</code> to reconstruct the exact
-        same session — same question index, same transcript, same follow-up depth:
+        The zero-config path: pass <code>persistKey</code> to <code>&lt;InterviewWidget&gt;</code>{' '}
+        and it handles the rest — saving a snapshot to <code>localStorage</code> after every state
+        change, and resuming from it on mount. A page refresh or an accidentally-closed tab picks
+        back up on the same question with the same transcript; the lobby never shows twice.
+      </p>
+      <CodeBlock lang="tsx">
+        {`<InterviewWidget
+  questions={questions}
+  rubric={rubric}
+  mode="server"
+  persistKey={\`interview-\${candidateId}\`}
+/>`}
+      </CodeBlock>
+      <Callout type="warning">
+        Use a key that&apos;s unique per candidate and interview — e.g. include a candidate or
+        session id, like the example above. A shared/generic key on a shared browser profile would
+        resume one candidate&apos;s in-progress answers for the next person who opens the page.
+        Persistence is best-effort: a full, disabled, or private-browsing-restricted{' '}
+        <code>localStorage</code> degrades silently to a fresh session, never a crash. The
+        snapshot is cleared automatically once the interview completes or expires.
+      </Callout>
+      <p>
+        Under the hood this is just <code>useInterview</code>&apos;s own primitives, exposed
+        directly if you&apos;re building a custom UI: <code>getSnapshot()</code> returns a plain,
+        serializable object covering the whole session (flow state and transcript); pass it back in
+        as <code>initialSnapshot</code> to reconstruct the exact same session — same question
+        index, same transcript, same follow-up depth.
       </p>
       <CodeBlock lang="tsx">
         {`import { useInterview } from '@interview-sdk/react';
@@ -36,17 +58,34 @@ const initialSnapshot = saved ? JSON.parse(saved) : undefined;`}
       </CodeBlock>
       <p>
         <code>initialSnapshot</code> is only read once, on mount — passing a new value on a later
-        render doesn&apos;t reset an in-progress session. <code>pause()</code> and{' '}
-        <code>resume()</code> are ordinary state transitions on top of the same mechanism; the
-        engine enforces session expiration and rejects a duplicate submission for the same turn on
-        its own, regardless of whether you&apos;re persisting state between calls.
+        render doesn&apos;t reset an in-progress session. A snapshot whose <code>sessionTimeoutMs</code>{' '}
+        already elapsed by the time it&apos;s resumed correctly reads as <code>&apos;expired&apos;</code>{' '}
+        immediately, not a stale <code>&apos;in_progress&apos;</code> that only fails once the
+        candidate tries to submit. <code>pause()</code> and <code>resume()</code> are ordinary state
+        transitions on top of the same mechanism; the engine enforces session expiration and rejects
+        a duplicate submission for the same turn on its own, regardless of whether you&apos;re
+        persisting state between calls.
       </p>
-      <Callout type="note">
-        <code>&lt;InterviewWidget&gt;</code> doesn&apos;t take <code>initialSnapshot</code> as a
-        prop today — this is a <code>useInterview</code>-level capability. Drop down to the hook
-        directly (see{' '}
-        <a href="/styling-and-composition">Styling, composition &amp; accessibility</a>) if you
-        need resume-after-refresh with your own UI built from the same pieces.
+
+      <h2>Integrity signals (tab switches &amp; pastes)</h2>
+      <p>
+        <code>&lt;InterviewWidget trackIntegritySignals&gt;</code> (off by default) tracks two
+        low-risk, non-biometric signals while the interview is active — how many times the
+        candidate&apos;s tab lost focus, and how many times they pasted into an answer — and
+        attaches them to the final report as <code>integritySignals</code>:
+      </p>
+      <CodeBlock lang="ts">
+        {`interface IntegritySignals {
+  tabSwitchCount: number;
+  tabSwitchTimestamps: number[];
+  pasteEvents: Array<{ length: number; timestamp: number }>;
+}`}
+      </CodeBlock>
+      <Callout type="warning">
+        These are observations for a human reviewer to weigh in context — not an automated
+        cheating verdict, and nothing like the biometric/behavioral signals (eye contact, gesture,
+        emotion scoring) this SDK deliberately never implements. If you turn this on, disclose it
+        to candidates — most interview platforms that track tab-switching say so up front.
       </Callout>
 
       <h2>Typed events</h2>

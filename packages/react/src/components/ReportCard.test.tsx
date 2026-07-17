@@ -152,4 +152,27 @@ describe('ReportCard', () => {
     await user.click(screen.getByRole('button', { name: 'Export JSON' }));
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
+
+  it('shows a session integrity section when integritySignals is present', () => {
+    render(
+      <ReportCard
+        report={report({
+          integritySignals: {
+            tabSwitchCount: 2,
+            tabSwitchTimestamps: [1, 2],
+            pasteEvents: [{ length: 400, timestamp: 3 }],
+          },
+        })}
+        rubric={rubric}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'Session integrity' })).toBeInTheDocument();
+    expect(screen.getByText(/Tab switches: 2/)).toBeInTheDocument();
+    expect(screen.getByText(/Pastes into an answer: 1/)).toBeInTheDocument();
+  });
+
+  it('omits the session integrity section entirely when integritySignals was never tracked', () => {
+    render(<ReportCard report={report()} rubric={rubric} />);
+    expect(screen.queryByRole('heading', { name: 'Session integrity' })).not.toBeInTheDocument();
+  });
 });

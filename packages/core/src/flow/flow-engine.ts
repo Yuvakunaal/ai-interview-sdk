@@ -95,6 +95,20 @@ export class InterviewFlowEngine {
     return structuredClone(this.state);
   }
 
+  /**
+   * Re-checks session expiry against the current wall clock and returns the
+   * resulting state — without this, a session reconstructed via fromState()
+   * (e.g. resumed from a page-refresh snapshot) keeps reporting whatever
+   * status was persisted until the next mutating call (submitAnswer/pause/
+   * resume) happens to trip applyExpiryIfNeeded() itself. Read-only callers
+   * that just want an honest "is this actually still alive" status right
+   * after resuming should call this instead of getState().
+   */
+  refreshExpiry(): SessionState {
+    this.applyExpiryIfNeeded();
+    return this.getState();
+  }
+
   currentQuestion(): Question | undefined {
     return this.questions[this.state.currentQuestionIndex];
   }

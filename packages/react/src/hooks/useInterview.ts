@@ -9,7 +9,12 @@ import {
   type SessionState,
 } from '@interview-sdk/core';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { buildReport, type InterviewReport, type TranscriptEntry } from './build-report.js';
+import {
+  buildReport,
+  type IntegritySignals,
+  type InterviewReport,
+  type TranscriptEntry,
+} from './build-report.js';
 import type { InterviewProcessor } from '../processor/types.js';
 
 export interface UseInterviewOptions {
@@ -21,6 +26,8 @@ export interface UseInterviewOptions {
   onSessionEnd?: (report: InterviewReport) => void;
   /** Resume a session from a snapshot returned by this same hook's getSnapshot() — e.g. one restored after a page refresh or loaded back from your own backend. Only read once, on mount. */
   initialSnapshot?: InterviewSnapshot;
+  /** Read once whenever a report is built (on completion or voluntary end) and attached to it as `integritySignals` — e.g. from useIntegritySignals() in @interview-sdk/react. Omit if you don't track this. */
+  getIntegritySignals?: () => IntegritySignals;
 }
 
 export interface SubmitAnswerOptions {
@@ -91,7 +98,13 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
       : new InterviewFlowEngine(config);
   });
 
-  const [flowState, setFlowState] = useState<SessionState>(() => flow.getState());
+  const [flowState, setFlowState] = useState<SessionState>(() =>
+    // A snapshot resumed after a real gap (page refresh, closed tab) may
+    // already be past sessionTimeoutMs — refreshExpiry() (rather than
+    // getState()) makes sure that shows up immediately as 'expired' instead
+    // of misleadingly rendering the question UI until the next submit throws.
+    options.initialSnapshot ? flow.refreshExpiry() : flow.getState(),
+  );
   const [transcript, setTranscript] = useState<TranscriptEntry[]>(
     () => options.initialSnapshot?.transcript ?? [],
   );
@@ -151,7 +164,12 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
     const nextState = flow.end();
     setFlowState(nextState);
     if (!wasAlreadyDone && nextState.status === 'completed') {
-      const finalReport = buildReport(nextState.sessionId, rubric, transcript);
+      const finalReport = buildReport(
+        nextState.sessionId,
+        rubric,
+        transcript,
+        options.getIntegritySignals?.(),
+      );
       setReport(finalReport);
       options.onSessionEnd?.(finalReport);
     }
@@ -196,7 +214,12 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
             const nextState = flow.advance();
             setFlowState(nextState);
             if (nextState.status === 'completed') {
-              const finalReport = buildReport(nextState.sessionId, rubric, nextTranscript);
+              const finalReport = buildReport(
+                nextState.sessionId,
+                rubric,
+                nextTranscript,
+                options.getIntegritySignals?.(),
+              );
               setReport(finalReport);
               options.onSessionEnd?.(finalReport);
             }
