@@ -1,5 +1,12 @@
 # @interview-sdk/example-basic-demo
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [cde77a7]
+  - @interview-sdk/react@0.2.0
+
 ## 0.0.2
 
 ### Patch Changes
