@@ -1,5 +1,12 @@
 # @interview-sdk/adapter-openai
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [755bd15]
+  - @interview-sdk/core@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @interview-sdk/example-basic-demo
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [755bd15]
+  - @interview-sdk/core@0.2.0
+  - @interview-sdk/react@0.2.3
+  - @interview-sdk/adapter-elevenlabs@0.1.2
+  - @interview-sdk/adapter-openai@0.1.2
+
 ## 0.0.5
 
 ### Patch Changes
