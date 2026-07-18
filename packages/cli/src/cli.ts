@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
-import { realpathSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { CliUsageError } from './errors.js';
 import { loadInterviewCliConfig } from './config-loader.js';
@@ -10,9 +11,26 @@ import { scaffoldServerRoute, type ScaffoldFramework } from './commands/init.js'
 import { createQuestionPackFile, validateQuestionPackFile } from './commands/pack.js';
 import { runDashboard } from './commands/dashboard.js';
 import { formatBiasHarnessReport, formatPackValidation, formatSimulationReport } from './format.js';
-import { CLI_PACKAGE_NAME, CLI_PACKAGE_VERSION } from './index.js';
+import { CLI_PACKAGE_NAME } from './index.js';
 
-const HELP_TEXT = `${CLI_PACKAGE_NAME}@${CLI_PACKAGE_VERSION}
+/**
+ * Reads the real installed version from this package's own package.json —
+ * not a hardcoded constant, which previously read '0.0.0' forever (never
+ * updated to track real releases, so every real `--version`/`--help`
+ * invocation of every published version printed a wrong number). Resolved
+ * via the package's own "./package.json" export, the same reliable,
+ * install-location-independent pattern `resolveDashboardAssetsDir` uses.
+ */
+function readOwnVersion(): string {
+  const require = createRequire(import.meta.url);
+  const pkgPath = require.resolve('@interview-sdk/cli/package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { version: string };
+  return pkg.version;
+}
+
+const CLI_VERSION = readOwnVersion();
+
+const HELP_TEXT = `${CLI_PACKAGE_NAME}@${CLI_VERSION}
 
 Usage: interview-sdk <command> [options]
 
@@ -183,7 +201,7 @@ export async function main(argv: string[]): Promise<number> {
     return 0;
   }
   if (command === '--version' || command === '-v') {
-    console.log(`${CLI_PACKAGE_NAME}@${CLI_PACKAGE_VERSION}`);
+    console.log(`${CLI_PACKAGE_NAME}@${CLI_VERSION}`);
     return 0;
   }
 

@@ -1,10 +1,14 @@
-import { realpathSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { isMainModule, main } from './cli.js';
+
+const ownPackageVersion = (
+  JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
+).version;
 
 let dir: string;
 let logSpy: ReturnType<typeof vi.spyOn>;
@@ -63,9 +67,10 @@ describe('main — top level', () => {
     expect(help).toContain('CONTRIBUTING.md');
   });
 
-  it('prints the version and returns 0 for --version', async () => {
+  it('prints the real installed version (from package.json, not a hardcoded constant) and returns 0 for --version', async () => {
     expect(await main(['--version'])).toBe(0);
-    expect(output()).toContain('@interview-sdk/cli@');
+    expect(output()).toContain(`@interview-sdk/cli@${ownPackageVersion}`);
+    expect(ownPackageVersion).not.toBe('0.0.0');
   });
 
   it('returns 1 and prints an error for an unknown command', async () => {
