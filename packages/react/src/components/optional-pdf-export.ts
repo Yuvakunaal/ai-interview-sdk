@@ -1,6 +1,15 @@
 export interface JsPdfInstance {
   text(text: string, x: number, y: number): unknown;
+  setFontSize(size: number): unknown;
+  addPage(): unknown;
+  splitTextToSize(text: string, maxWidth: number): string[];
   save(filename: string): unknown;
+  internal: {
+    pageSize: {
+      getHeight(): number;
+      getWidth(): number;
+    };
+  };
 }
 
 export interface JsPdfModule {

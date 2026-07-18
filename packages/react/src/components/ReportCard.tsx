@@ -5,6 +5,7 @@ import { ScoreSummary } from './ScoreSummary.js';
 import { TranscriptViewer } from './TranscriptViewer.js';
 import { downloadBlob, transcriptToCsv } from './report-export.js';
 import { loadJsPdf } from './optional-pdf-export.js';
+import { generatePdfReport } from './pdf-report.js';
 
 export interface ReportCardProps {
   report: InterviewReport;
@@ -61,15 +62,14 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
     try {
       const jsPDFModule = await loadJsPdf();
       const doc = new jsPDFModule.default();
-      doc.text(`Interview Report`, 10, 10);
-      doc.text(`Overall score: ${report.totalScore}/100`, 10, 20);
+      generatePdfReport(doc, report, rubric);
       doc.save(`interview-report-${report.sessionId}.pdf`);
     } catch (error) {
       onExportError?.(error instanceof Error ? error : new Error(String(error)), 'pdf');
       setFallback('pdf');
       exportJson();
     }
-  }, [report, onExportError, exportJson]);
+  }, [report, rubric, onExportError, exportJson]);
 
   return (
     <article className="isdk-report-card" aria-labelledby={headingId}>

@@ -4,6 +4,7 @@ import '@interview-sdk/react/styles.css';
 import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { buildIntegrationCode, type RuntimeMode } from './build-integration-code.js';
+import { ConceptsInput } from './ConceptsInput.js';
 import { createMockAdapter } from './mock-adapter.js';
 import { mockSynthesize, mockTranscribe } from './mock-voice.js';
 
@@ -42,17 +43,6 @@ const modes: Array<{ id: RuntimeMode; label: string; caption: string }> = [
 
 const rolePresets = ['Frontend Engineer', 'Backend Engineer', 'ML Engineer', 'Other'];
 const brandSwatches = ['#b8862a', '#2f7a52', '#8a4a35', '#3d5a80'];
-
-function conceptsToText(concepts: Question['concepts']): string {
-  return concepts?.join(', ') ?? '';
-}
-
-function textToConcepts(text: string): string[] {
-  return text
-    .split(',')
-    .map((concept) => concept.trim())
-    .filter(Boolean);
-}
 
 export function App() {
   const adapter = useMemo(() => createMockAdapter(), []);
@@ -310,13 +300,9 @@ export function App() {
                   </label>
                   <label>
                     <span>Concepts</span>
-                    <input
-                      value={conceptsToText(question.concepts)}
-                      onChange={(event) =>
-                        updateQuestion(question.id, {
-                          concepts: textToConcepts(event.target.value),
-                        })
-                      }
+                    <ConceptsInput
+                      concepts={question.concepts}
+                      onChange={(concepts) => updateQuestion(question.id, { concepts })}
                     />
                   </label>
                 </article>

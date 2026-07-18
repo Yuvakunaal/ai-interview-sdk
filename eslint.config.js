@@ -65,6 +65,10 @@ export default tseslint.config(
     rules: {
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
+      // ConceptsInput renders a real <input> as its root element — the
+      // rule can't see across the component boundary to verify that on its
+      // own, so it needs to be told explicitly rather than suppressed.
+      'jsx-a11y/label-has-associated-control': ['error', { controlComponents: ['ConceptsInput'] }],
     },
   },
   prettier,
