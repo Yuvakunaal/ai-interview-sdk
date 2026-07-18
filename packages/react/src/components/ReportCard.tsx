@@ -3,25 +3,39 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { InterviewReport } from '../hooks/build-report.js';
 import { ScoreSummary } from './ScoreSummary.js';
 import { TranscriptViewer } from './TranscriptViewer.js';
-import { downloadBlob, transcriptToCsv } from './report-export.js';
-import { loadJsPdf } from './optional-pdf-export.js';
-import { generatePdfReport } from './pdf-report.js';
+import { downloadBlob, downloadDataUrl, transcriptToCsv } from './report-export.js';
+import { loadHtmlToImage } from './optional-image-export.js';
 
 export interface ReportCardProps {
   report: InterviewReport;
   rubric: Rubric;
-  /** Called when PDF or CSV generation fails and the report falls back to a JSON download. */
-  onExportError?: (error: Error, format: 'pdf' | 'csv') => void;
+  /** Called when image or CSV generation fails and the report falls back to a JSON download. */
+  onExportError?: (error: Error, format: 'image' | 'csv') => void;
 }
 
-const FALLBACK_MESSAGE: Record<'pdf' | 'csv', string> = {
-  pdf: "PDF export isn't available here — downloaded a JSON file instead.",
+const FALLBACK_MESSAGE: Record<'image' | 'csv', string> = {
+  image: "Image export isn't available here — downloaded a JSON file instead.",
   csv: "CSV export failed — downloaded a JSON file instead.",
 };
+
+/**
+ * Excludes the action buttons and any export notice from the captured
+ * image — only the report content itself. html-to-image's real filter
+ * callback (verified against its source) runs on every child node during
+ * cloning, including raw Text nodes with no `.classList` — despite its
+ * typed signature claiming `HTMLElement` — so non-Element nodes must be
+ * passed through rather than assumed to have classList.
+ */
+export function isExportable(domNode: HTMLElement): boolean {
+  if (!(domNode instanceof Element)) return true;
+  return !domNode.classList.contains('isdk-report-card__actions')
+    && !domNode.classList.contains('isdk-report-card__export-notice');
+}
 
 export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
   const headingId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const cardRef = useRef<HTMLElement>(null);
   // This component mounts fresh exactly once, the moment the interview
   // completes — moving focus here (rather than leaving it on whatever
   // button was last clicked, or dropped to <body>) is what actually tells a
@@ -30,10 +44,10 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
     headingRef.current?.focus();
   }, []);
   // Surfaces the same fallback the catch blocks below already handle
-  // silently at the data layer — so a candidate who clicks "Export PDF"
+  // silently at the data layer — so a candidate who clicks "Export Image"
   // and gets a JSON file actually finds out why, instead of a mislabeled
   // download with no explanation.
-  const [fallback, setFallback] = useState<'pdf' | 'csv' | null>(null);
+  const [fallback, setFallback] = useState<'image' | 'csv' | null>(null);
 
   const exportJson = useCallback(() => {
     downloadBlob(
@@ -57,22 +71,25 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
     }
   }, [report, onExportError, exportJson]);
 
-  const exportPdf = useCallback(async () => {
+  const exportImage = useCallback(async () => {
     setFallback(null);
     try {
-      const jsPDFModule = await loadJsPdf();
-      const doc = new jsPDFModule.default();
-      generatePdfReport(doc, report, rubric);
-      doc.save(`interview-report-${report.sessionId}.pdf`);
+      if (!cardRef.current) throw new Error('Report card is not mounted.');
+      const htmlToImage = await loadHtmlToImage();
+      const dataUrl = await htmlToImage.toPng(cardRef.current, {
+        pixelRatio: 2,
+        filter: isExportable,
+      });
+      downloadDataUrl(dataUrl, `interview-report-${report.sessionId}.png`);
     } catch (error) {
-      onExportError?.(error instanceof Error ? error : new Error(String(error)), 'pdf');
-      setFallback('pdf');
+      onExportError?.(error instanceof Error ? error : new Error(String(error)), 'image');
+      setFallback('image');
       exportJson();
     }
-  }, [report, rubric, onExportError, exportJson]);
+  }, [report, onExportError, exportJson]);
 
   return (
-    <article className="isdk-report-card" aria-labelledby={headingId}>
+    <article className="isdk-report-card" aria-labelledby={headingId} ref={cardRef}>
       <div className="isdk-report-card__head">
         <h2 className="isdk-report-card__title" id={headingId} ref={headingRef} tabIndex={-1}>
           Interview Report
@@ -170,9 +187,9 @@ export function ReportCard({ report, rubric, onExportError }: ReportCardProps) {
         <button
           className="isdk-btn isdk-btn--secondary"
           type="button"
-          onClick={() => void exportPdf()}
+          onClick={() => void exportImage()}
         >
-          Export PDF
+          Export Image
         </button>
       </div>
     </article>

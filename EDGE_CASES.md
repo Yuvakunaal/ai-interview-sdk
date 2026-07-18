@@ -174,8 +174,8 @@ contributor, including us — has to guess. Every "Handled" row is backed by a t
 | Missing/partial transcript | ✅     | `buildReport` handles an empty transcript without crashing.                                         |
 | Corrupted transcript       | ✗      | No explicit validation of malformed transcript entries.                                             |
 | Missing scores             | ✅     | No-data dimensions are excluded from strengths/weaknesses rather than defaulting to a misleading 0. |
-| Export failure             | ✅     | PDF export failure falls back to JSON + an `onExportError` callback.                                |
-| PDF/CSV generation failure | ✅     | Same fallback mechanism covers both.                                                                |
+| Export failure             | ✅     | Image export failure falls back to JSON + an `onExportError` callback.                              |
+| Image/CSV generation failure | ✅   | Same fallback mechanism covers both.                                                                |
 | Large-report handling      | ✗      | No pagination/streaming; untested at scale.                                                         |
 | Historical retrieval       | 🔒     | The SDK stores nothing — this is entirely the developer's own persistence layer.                    |
 

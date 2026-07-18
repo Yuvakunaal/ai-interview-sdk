@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { InterviewReport, TranscriptEntry } from '../hooks/build-report.js';
-import { ReportCard } from './ReportCard.js';
+import { ReportCard, isExportable } from './ReportCard.js';
 
 const rubric = defineRubric([
   { id: 'technical', label: 'Technical', weight: 3 },
@@ -115,29 +115,34 @@ describe('ReportCard', () => {
     expect(blob.type).toBe('text/csv');
   });
 
-  it('falls back to a JSON download and reports the error when PDF export fails (jspdf not installed)', async () => {
+  // jsdom lacks the canvas/SVGImageElement APIs html-to-image needs, so this
+  // exercises the real fallback path via a genuine capture failure — not a
+  // simulated "package not installed" state, which was verified separately
+  // against a real, external npm consumer (installed vs. not installed,
+  // both in a real browser).
+  it('falls back to a JSON download and reports the error when image export fails', async () => {
     const user = userEvent.setup();
     const onExportError = vi.fn();
     render(<ReportCard report={report()} rubric={rubric} onExportError={onExportError} />);
 
-    await user.click(screen.getByRole('button', { name: 'Export PDF' }));
+    await user.click(screen.getByRole('button', { name: 'Export Image' }));
 
-    await waitFor(() => expect(onExportError).toHaveBeenCalledWith(expect.any(Error), 'pdf'));
+    await waitFor(() => expect(onExportError).toHaveBeenCalledWith(expect.any(Error), 'image'));
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     const blob = createObjectURL.mock.calls[0]![0] as Blob;
     expect(blob.type).toBe('application/json');
   });
 
-  it('shows a visible notice when PDF export falls back to JSON, so the mismatch is never silent', async () => {
+  it('shows a visible notice when image export falls back to JSON, so the mismatch is never silent', async () => {
     const user = userEvent.setup();
     render(<ReportCard report={report()} rubric={rubric} />);
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Export PDF' }));
+    await user.click(screen.getByRole('button', { name: 'Export Image' }));
 
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent(
-        "PDF export isn't available here — downloaded a JSON file instead.",
+        "Image export isn't available here — downloaded a JSON file instead.",
       ),
     );
   });
@@ -146,7 +151,7 @@ describe('ReportCard', () => {
     const user = userEvent.setup();
     render(<ReportCard report={report()} rubric={rubric} />);
 
-    await user.click(screen.getByRole('button', { name: 'Export PDF' }));
+    await user.click(screen.getByRole('button', { name: 'Export Image' }));
     await waitFor(() => expect(screen.getByRole('status')).toBeInTheDocument());
 
     await user.click(screen.getByRole('button', { name: 'Export JSON' }));
@@ -174,5 +179,27 @@ describe('ReportCard', () => {
   it('omits the session integrity section entirely when integritySignals was never tracked', () => {
     render(<ReportCard report={report()} rubric={rubric} />);
     expect(screen.queryByRole('heading', { name: 'Session integrity' })).not.toBeInTheDocument();
+  });
+
+  describe('isExportable (the image-export filter)', () => {
+    it('excludes the actions and export-notice elements from the captured image', () => {
+      const actions = document.createElement('div');
+      actions.className = 'isdk-report-card__actions';
+      const notice = document.createElement('p');
+      notice.className = 'isdk-report-card__export-notice';
+      expect(isExportable(actions)).toBe(false);
+      expect(isExportable(notice)).toBe(false);
+    });
+
+    it('includes ordinary content elements', () => {
+      const heading = document.createElement('h2');
+      expect(isExportable(heading)).toBe(true);
+    });
+
+    it('passes through non-Element nodes (e.g. Text) instead of crashing on missing classList — html-to-image really does call its filter on every child node, not just elements, despite its typed signature', () => {
+      const text = document.createTextNode('Overall score: 70/100');
+      expect(() => isExportable(text as unknown as HTMLElement)).not.toThrow();
+      expect(isExportable(text as unknown as HTMLElement)).toBe(true);
+    });
   });
 });

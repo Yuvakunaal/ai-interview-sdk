@@ -90,12 +90,13 @@ export interface InterviewWidgetProps {
   /** The candidate's own display name, shown on their tile. Defaults to "You". */
   candidateName?: string;
   /**
-   * Called when the final report's PDF or CSV export fails and falls back
-   * to a JSON download (e.g. the optional `jspdf` peer dependency isn't
-   * installed) — the report itself already shows a visible notice when
-   * this happens; use this to also log it or notify your own backend.
+   * Called when the final report's image or CSV export fails and falls
+   * back to a JSON download (e.g. the optional `html-to-image` peer
+   * dependency isn't installed) — the report itself already shows a
+   * visible notice when this happens; use this to also log it or notify
+   * your own backend.
    */
-  onExportError?: (error: Error, format: 'pdf' | 'csv') => void;
+  onExportError?: (error: Error, format: 'image' | 'csv') => void;
   /**
    * When set, automatically saves the session to localStorage under this
    * key after every state change, and resumes from it on mount — a page

@@ -158,18 +158,21 @@ Not a stretch goal — every component here ships with:
 - **JSON** — always available, no dependencies.
 - **CSV** — always available (hand-rolled transcript-to-CSV, no
   dependencies).
-- **PDF** — only if you've installed the optional peer dependency
-  `jspdf` yourself:
+- **Image (PNG)** — a snapshot of the rendered report card (scores,
+  strengths/weaknesses, transcript — not the action buttons themselves),
+  only if you've installed the optional peer dependency `html-to-image`
+  yourself:
 
   ```bash
-  npm install jspdf
+  npm install html-to-image
   ```
 
-  If `jspdf` isn't installed, clicking "Export PDF" falls back to a JSON
-  download and calls `onExportError(error, 'pdf')` so you can surface a
-  message. This package never imports `jspdf` statically — it's loaded via
-  a dynamic import that's invisible to bundlers, so `jspdf` is never bundled
-  or required unless a developer actually installs and uses it.
+  If `html-to-image` isn't installed, clicking "Export Image" falls back
+  to a JSON download and calls `onExportError(error, 'image')` so you can
+  surface a message. This package never imports `html-to-image`
+  statically — it's loaded via a dynamic import that's invisible to
+  bundlers, so it's never bundled or required unless a developer actually
+  installs and uses it.
 
 ## Testing
 

@@ -57,7 +57,13 @@
   ],
   "peerDependencies": {
     "react": "^18 || ^19",
-    "react-dom": "^18 || ^19"
+    "react-dom": "^18 || ^19",
+    "html-to-image": "^1.11.0"
+  },
+  "peerDependenciesMeta": {
+    "html-to-image": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@interview-sdk/core": "workspace:*"

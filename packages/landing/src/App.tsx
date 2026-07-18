@@ -62,7 +62,7 @@ const SPEC_ROWS: SpecRow[] = [
   {
     tag: '[RPT]',
     name: 'Reports',
-    desc: 'JSON, PDF, and CSV export — full transcript plus strengths, weaknesses, and missed concepts.',
+    desc: 'JSON, image, and CSV export — full transcript plus strengths, weaknesses, and missed concepts.',
   },
   {
     tag: '[HOOK]',

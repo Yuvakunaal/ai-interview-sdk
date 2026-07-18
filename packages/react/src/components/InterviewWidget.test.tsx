@@ -450,7 +450,7 @@ describe('InterviewWidget', () => {
     expect(onSessionEnd).toHaveBeenCalledTimes(1);
   });
 
-  it('passes onExportError through to the report, since jspdf is never installed in this environment', async () => {
+  it('passes onExportError through to the report when image export fails', async () => {
     const user = userEvent.setup();
     vi.stubGlobal('URL', {
       ...URL,
@@ -483,10 +483,10 @@ describe('InterviewWidget', () => {
       expect(screen.getByRole('heading', { name: 'Interview Report' })).toBeInTheDocument(),
     );
 
-    await user.click(screen.getByRole('button', { name: 'Export PDF' }));
-    await waitFor(() => expect(onExportError).toHaveBeenCalledWith(expect.any(Error), 'pdf'));
+    await user.click(screen.getByRole('button', { name: 'Export Image' }));
+    await waitFor(() => expect(onExportError).toHaveBeenCalledWith(expect.any(Error), 'image'));
     expect(screen.getByRole('status')).toHaveTextContent(
-      "PDF export isn't available here — downloaded a JSON file instead.",
+      "Image export isn't available here — downloaded a JSON file instead.",
     );
 
     clickSpy.mockRestore();

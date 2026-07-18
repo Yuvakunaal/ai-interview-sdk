@@ -8,7 +8,7 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   treeshake: true,
-  external: ['react', 'react-dom'],
+  external: ['react', 'react-dom', 'html-to-image'],
   onSuccess: async () => {
     mkdirSync('dist', { recursive: true });
     copyFileSync('src/styles.css', 'dist/styles.css');

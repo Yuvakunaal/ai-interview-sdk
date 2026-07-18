@@ -37,3 +37,13 @@ export function downloadBlob(blob: Blob, filename: string): void {
   document.body.removeChild(anchor);
   URL.revokeObjectURL(url);
 }
+
+/** Same download idiom as {@link downloadBlob}, for a data: URL that's already encoded — no object URL to revoke. */
+export function downloadDataUrl(dataUrl: string, filename: string): void {
+  const anchor = document.createElement('a');
+  anchor.href = dataUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+}

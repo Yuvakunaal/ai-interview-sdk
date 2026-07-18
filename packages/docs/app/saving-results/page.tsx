@@ -128,8 +128,9 @@ export async function POST(request: Request) {
       <h2>Exports come free</h2>
       <p>
         Separately from anything you persist, the candidate-facing <code>ReportCard</code> can
-        export the same report as JSON or CSV out of the box (PDF too, if you install{' '}
-        <code>jspdf</code>) — see{' '}
+        export the same report as JSON or CSV out of the box (a PNG snapshot too, if you install
+        {' '}
+        <code>html-to-image</code>) — see{' '}
         <Link href="/styling-and-composition">Styling, composition &amp; accessibility</Link>.
       </p>
     </>

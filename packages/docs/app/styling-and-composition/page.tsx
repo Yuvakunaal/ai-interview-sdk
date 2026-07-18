@@ -159,18 +159,20 @@ export default function StylingAndComposition() {
           dependencies).
         </li>
         <li>
-          <strong>PDF</strong> — only if you install the optional peer dependency yourself:
+          <strong>Image (PNG)</strong> — a snapshot of the rendered report card, only if you
+          install the optional peer dependency yourself:
         </li>
       </ul>
       <CodeBlock lang="bash" filename="terminal">
-        {`npm install jspdf`}
+        {`npm install html-to-image`}
       </CodeBlock>
       <Callout type="note">
-        If <code>jspdf</code> isn&apos;t installed, clicking &quot;Export PDF&quot; falls back to a
-        JSON download and calls <code>onExportError(error, &apos;pdf&apos;)</code> so you can
-        surface a message. <code>@interview-sdk/react</code> never imports <code>jspdf</code>{' '}
-        statically — it&apos;s loaded via a dynamic import invisible to bundlers, so it&apos;s never
-        bundled or required unless a developer actually installs and uses it.
+        If <code>html-to-image</code> isn&apos;t installed, clicking &quot;Export Image&quot; falls
+        back to a JSON download and calls <code>onExportError(error, &apos;image&apos;)</code> so
+        you can surface a message. <code>@interview-sdk/react</code> never imports{' '}
+        <code>html-to-image</code> statically — it&apos;s loaded via a dynamic import invisible to
+        bundlers, so it&apos;s never bundled or required unless a developer actually installs and
+        uses it.
       </Callout>
     </>
   );
