@@ -1,6 +1,6 @@
 {
   "name": "@interview-sdk/adapter-gemini",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Google Gemini provider adapter for @interview-sdk/core.",
   "license": "MIT",
   "type": "module",
