@@ -1,6 +1,6 @@
 {
   "name": "@interview-sdk/adapter-deepgram",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Deepgram voice (speech-to-text) provider adapter for @interview-sdk/core.",
   "license": "MIT",
   "type": "module",
