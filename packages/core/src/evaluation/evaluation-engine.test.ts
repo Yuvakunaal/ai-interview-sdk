@@ -394,6 +394,95 @@ describe('EvaluationEngine', () => {
     ).rejects.toThrow(MalformedAdapterResponseError);
   });
 
+  describe('Question.dimensions (scoping a rubric down per question)', () => {
+    // Reproduces a real report: a 3-dimension rubric (technical=3,
+    // communication=1, systems=2) against a plain SQL syntax-recall
+    // question with no systems-design angle at all. Before this, "systems"
+    // scored 0 on every such question, dragging a perfectly good answer's
+    // weighted score down to 6.67/100.
+    const threeDimensionRubric = defineRubric([
+      { id: 'technical', label: 'Technical accuracy', weight: 3 },
+      { id: 'communication', label: 'Communication clarity', weight: 1 },
+      { id: 'systems', label: 'Systems thinking', weight: 2 },
+    ]);
+    const scopedQuestion: Question = {
+      id: 'q1',
+      prompt: 'What is a SELECT statement?',
+      concepts: ['rows', 'retrieve'],
+      dimensions: ['technical', 'communication'],
+    };
+
+    it('only asks the adapter to score the dimensions the question declares', async () => {
+      const adapter = fakeAdapter(
+        JSON.stringify({ dimensionScores: { technical: 10, communication: 10 } }),
+      );
+      const engine = new EvaluationEngine();
+
+      await engine.evaluate({
+        question: scopedQuestion,
+        rubric: threeDimensionRubric,
+        answer: answer('Uh, select statement is used to retrieve the rows.'),
+        adapter,
+      });
+
+      const request = vi.mocked(adapter.complete).mock.calls[0]![0];
+      const systemMessage = request.messages.find((m) => m.role === 'system')!.content;
+      expect(systemMessage).toContain('"id":"technical"');
+      expect(systemMessage).toContain('"id":"communication"');
+      expect(systemMessage).not.toContain('"id":"systems"');
+    });
+
+    it('computes totalScore from only the applicable dimensions, not the real 6.67 an unscoped rubric would have produced', async () => {
+      const adapter = fakeAdapter(
+        JSON.stringify({ dimensionScores: { technical: 10, communication: 10 } }),
+      );
+      const engine = new EvaluationEngine();
+
+      const result = await engine.evaluate({
+        question: scopedQuestion,
+        rubric: threeDimensionRubric,
+        answer: answer('Uh, select statement is used to retrieve the rows.'),
+        adapter,
+      });
+
+      expect(result.totalScore).toBe(10);
+      expect(result.dimensionScores).toEqual({ technical: 10, communication: 10 });
+      expect(result.dimensionScores.systems).toBeUndefined();
+    });
+
+    it('excludes the inapplicable dimension from a zero-result short-circuit too (e.g. a skipped question)', async () => {
+      const adapter = fakeAdapter('{}');
+      const engine = new EvaluationEngine();
+
+      const result = await engine.evaluate({
+        question: scopedQuestion,
+        rubric: threeDimensionRubric,
+        answer: answer('', { isSkipped: true }),
+        adapter,
+      });
+
+      expect(result.dimensionScores).toEqual({ technical: 0, communication: 0 });
+      expect(result.dimensionScores.systems).toBeUndefined();
+    });
+
+    it('still scores every rubric dimension when the question omits `dimensions` (the default, fully backward compatible)', async () => {
+      const adapter = fakeAdapter(
+        JSON.stringify({ dimensionScores: { technical: 10, communication: 10, systems: 0 } }),
+      );
+      const engine = new EvaluationEngine();
+      const unscoped: Question = { ...scopedQuestion, dimensions: undefined };
+
+      const result = await engine.evaluate({
+        question: unscoped,
+        rubric: threeDimensionRubric,
+        answer: answer('Uh, select statement is used to retrieve the rows.'),
+        adapter,
+      });
+
+      expect(result.dimensionScores).toEqual({ technical: 10, communication: 10, systems: 0 });
+    });
+  });
+
   it('scores non-English answers the same way, since candidate text is opaque data to the engine (language-independent scoring)', async () => {
     const adapter = fakeAdapter(
       JSON.stringify({ dimensionScores: { technical: 85, communication: 85 } }),

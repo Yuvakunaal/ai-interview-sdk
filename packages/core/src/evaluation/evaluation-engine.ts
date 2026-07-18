@@ -1,7 +1,7 @@
 import { parseAdapterJson } from '../adapter/parse-json.js';
 import type { AIProviderAdapter } from '../adapter/types.js';
 import { AnswerTooLongError, TooManyPreviousTurnsError } from '../errors.js';
-import { scoreRubric } from '../rubric/rubric.js';
+import { scopeRubricToQuestion, scoreRubric } from '../rubric/rubric.js';
 import type {
   CandidateAnswer,
   EvaluationFlag,
@@ -35,13 +35,17 @@ export interface EvaluateOptions {
 export class EvaluationEngine {
   async evaluate(options: EvaluateOptions): Promise<EvaluationResult> {
     const { question, rubric, answer } = options;
+    // Every scoring path below (deterministic short-circuits and the real
+    // AI call alike) only ever sees the dimensions this question actually
+    // declares — see `Question.dimensions` and `scopeRubricToQuestion`.
+    const scopedRubric = scopeRubricToQuestion(rubric, question.dimensions);
 
     // Deterministic short-circuits: no AI call needed (or possible) for these.
     if (answer.isSkipped) {
-      return this.zeroResult(question, rubric, ['skipped']);
+      return this.zeroResult(question, scopedRubric, ['skipped']);
     }
     if (answer.isSilence || answer.text.trim() === '') {
-      return this.zeroResult(question, rubric, ['no_answer']);
+      return this.zeroResult(question, scopedRubric, ['no_answer']);
     }
     // A real provider call is still made for anything short of a bare
     // admission — an AI's own leniency isn't trusted here specifically
@@ -49,7 +53,7 @@ export class EvaluationEngine {
     // exactly "I don't know" on a follow-up in practice. This can't
     // depend on any given model consistently scoring that at 0.
     if (isExplicitDontKnowAnswer(answer.text)) {
-      return this.zeroResult(question, rubric, ['i_dont_know']);
+      return this.zeroResult(question, scopedRubric, ['i_dont_know']);
     }
     if (answer.text.length > MAX_ANSWER_TEXT_LENGTH) {
       throw new AnswerTooLongError(MAX_ANSWER_TEXT_LENGTH, answer.text.length);
@@ -72,7 +76,7 @@ export class EvaluationEngine {
 
     const request = buildEvaluationRequest({
       question,
-      rubric,
+      rubric: scopedRubric,
       answer,
       previousTurns: options.previousTurns,
     });
@@ -80,7 +84,7 @@ export class EvaluationEngine {
     const response = await options.adapter.complete(request);
     const parsed = parseAdapterJson(response.text, evaluationResponseSchema);
 
-    const { total, breakdown } = scoreRubric(rubric, parsed.dimensionScores);
+    const { total, breakdown } = scoreRubric(scopedRubric, parsed.dimensionScores);
     const dimensionScores = Object.fromEntries(
       Object.entries(breakdown).map(([id, value]) => [id, value.score]),
     );

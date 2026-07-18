@@ -38,10 +38,10 @@ function entry(overrides: Partial<TranscriptEntry> = {}): TranscriptEntry {
 }
 
 describe('buildReport', () => {
-  it('returns zeroed fields for an empty transcript', () => {
+  it('returns zeroed totalScore and no dimension averages at all for an empty transcript (nothing was ever assessed)', () => {
     const report = buildReport('session-1', rubric, []);
     expect(report.totalScore).toBe(0);
-    expect(report.dimensionAverages).toEqual({ technical: 0, communication: 0 });
+    expect(report.dimensionAverages).toEqual({});
     expect(report.strengths).toEqual([]);
     expect(report.weaknesses).toEqual([]);
   });
@@ -52,6 +52,25 @@ describe('buildReport', () => {
       entry({ evaluation: evaluation({ totalScore: 100 }) }),
     ]);
     expect(report.totalScore).toBeCloseTo(80);
+  });
+
+  it('omits a dimension from dimensionAverages entirely when no question in the transcript ever assessed it', () => {
+    // Reproduces a real report: a 3-dimension rubric where "systems" never
+    // applied to either question asked (see Question.dimensions), so
+    // neither evaluation includes a "systems" key at all — previously this
+    // would have shown "Systems thinking: 0/100" in the UI, a false,
+    // demoralizing failure on something never actually assessed.
+    const threeDimensionRubric = defineRubric([
+      { id: 'technical', label: 'Technical accuracy', weight: 3 },
+      { id: 'communication', label: 'Communication clarity', weight: 1 },
+      { id: 'systems', label: 'Systems thinking', weight: 2 },
+    ]);
+    const report = buildReport('session-1', threeDimensionRubric, [
+      entry({ evaluation: evaluation({ dimensionScores: { technical: 10, communication: 10 } }) }),
+    ]);
+
+    expect(report.dimensionAverages).toEqual({ technical: 10, communication: 10 });
+    expect(report.dimensionAverages).not.toHaveProperty('systems');
   });
 
   it('averages each rubric dimension independently', () => {

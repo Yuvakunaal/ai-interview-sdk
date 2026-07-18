@@ -54,6 +54,32 @@ export function defineRubric(dimensions: RubricDimensionInput[]): Rubric {
   };
 }
 
+/**
+ * Scopes a rubric down to just the dimensions a specific question actually
+ * assesses (`Question.dimensions`), re-normalizing weight among just that
+ * subset — so a question that only covers part of the rubric can still
+ * reach 100% using only its own relevant dimensions, rather than being
+ * permanently capped by dimensions it was never going to address. Falls
+ * back to the full rubric when the question doesn't declare `dimensions`
+ * at all (the default: every question assesses every dimension), or when
+ * none of the declared ids match a real rubric dimension (a config
+ * mistake — falling back is safer than silently scoring nothing).
+ */
+export function scopeRubricToQuestion(rubric: Rubric, questionDimensionIds: string[] | undefined): Rubric {
+  if (!questionDimensionIds || questionDimensionIds.length === 0) return rubric;
+
+  const applicable = rubric.dimensions.filter((dimension) => questionDimensionIds.includes(dimension.id));
+  if (applicable.length === 0) return rubric;
+
+  const totalWeight = applicable.reduce((sum, dimension) => sum + dimension.weight, 0);
+  return {
+    dimensions: applicable.map((dimension) => ({
+      ...dimension,
+      normalizedWeight: dimension.weight / totalWeight,
+    })),
+  };
+}
+
 export interface RubricScore {
   total: number;
   breakdown: Record<string, { score: number; weight: number; weighted: number }>;

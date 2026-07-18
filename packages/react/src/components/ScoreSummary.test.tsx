@@ -36,10 +36,22 @@ describe('ScoreSummary', () => {
     expect(communicationRow).toHaveTextContent('60/100');
   });
 
-  it('defaults a dimension with no recorded average to 0', () => {
+  it('omits a dimension no question ever assessed entirely, rather than showing a false 0/100', () => {
+    // Reproduces a real report: a rubric dimension ("Systems thinking")
+    // that no question in the interview actually addressed previously
+    // rendered as a demoralizing 0/100, implying real failure at something
+    // the candidate was never asked about.
     render(<ScoreSummary totalScore={0} rubric={rubric} dimensionAverages={{}} />);
-    const technicalRow = screen.getByRole('rowheader', { name: 'Technical' }).closest('tr');
-    expect(technicalRow).toHaveTextContent('0/100');
+    expect(screen.queryByRole('rowheader', { name: 'Technical' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('rowheader', { name: 'Communication' })).not.toBeInTheDocument();
+  });
+
+  it('shows only the dimensions that were actually assessed, omitting the rest', () => {
+    render(
+      <ScoreSummary totalScore={90} rubric={rubric} dimensionAverages={{ technical: 90 }} />,
+    );
+    expect(screen.getByRole('rowheader', { name: 'Technical' })).toBeInTheDocument();
+    expect(screen.queryByRole('rowheader', { name: 'Communication' })).not.toBeInTheDocument();
   });
 
   it('uses a semantic table with column headers for accessibility', () => {

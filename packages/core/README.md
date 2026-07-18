@@ -111,6 +111,41 @@ registry.registerAIProvider(new OpenAIAdapter({ apiKey: process.env.OPENAI_API_K
 const adapter = registry.getAIProvider('openai'); // then pass this to InterviewWidget/the processors as usual
 ```
 
+## When a rubric dimension doesn't apply to every question
+
+A rubric with a "Systems thinking" dimension makes sense for a design
+question, but has nothing to grade on "What does a SQL `WHERE` clause do?"
+— without telling the SDK that, every such question scores 0 on that
+dimension, which both understates the candidate's real total and reads as
+a false, demoralizing failure at something they were never actually asked.
+Set `dimensions` on the question to the rubric dimension ids it actually
+assesses:
+
+```ts
+const config = {
+  questions: [
+    {
+      id: 'q1',
+      prompt: 'What does a WHERE clause do?',
+      concepts: ['filter', 'condition'],
+      dimensions: ['technical', 'communication'], // this rubric's "systems" doesn't apply here
+    },
+  ],
+  rubric: [
+    { id: 'technical', label: 'Technical', weight: 3 },
+    { id: 'communication', label: 'Communication', weight: 1 },
+    { id: 'systems', label: 'Systems thinking', weight: 2 },
+  ],
+};
+```
+
+That question's `totalScore` is then computed from only `technical` and
+`communication` (re-normalized to still reach 100%), the AI is only asked
+to score those two, and `systems` never appears in that question's
+`dimensionScores` at all — not present at a misleading 0. Omit `dimensions`
+entirely and a question assesses every rubric dimension, exactly as
+before.
+
 See the source under `src/` — every engine ships with its own test suite
 covering the product spec's edge-case list for Evaluation, Follow-Up, and
 Developer Configuration.

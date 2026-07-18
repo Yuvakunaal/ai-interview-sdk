@@ -27,6 +27,7 @@ export interface IntegritySignals {
 export interface InterviewReport {
   sessionId: string;
   totalScore: number;
+  /** Only has an entry for a dimension at least one question actually assessed (see `Question.dimensions`) — one no question addressed is simply absent, not present at 0. */
   dimensionAverages: Record<string, number>;
   strengths: string[];
   weaknesses: string[];
@@ -51,15 +52,19 @@ export function buildReport(
   transcript: TranscriptEntry[],
   integritySignals?: IntegritySignals,
 ): InterviewReport {
+  // A dimension no question in this transcript ever assessed (see
+  // Question.dimensions) simply isn't a key here at all — not present at a
+  // misleading 0, which would otherwise read as a real, failed assessment
+  // of something the candidate was never actually asked about.
   const dimensionAverages: Record<string, number> = {};
   const dimensionsWithData = new Set<string>();
   for (const dimension of rubric.dimensions) {
     const scores = transcript
       .map((entry) => entry.evaluation.dimensionScores[dimension.id])
       .filter((score): score is number => typeof score === 'number');
-    if (scores.length > 0) dimensionsWithData.add(dimension.id);
-    dimensionAverages[dimension.id] =
-      scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
+    if (scores.length === 0) continue;
+    dimensionsWithData.add(dimension.id);
+    dimensionAverages[dimension.id] = scores.reduce((sum, score) => sum + score, 0) / scores.length;
   }
 
   const totalScore =

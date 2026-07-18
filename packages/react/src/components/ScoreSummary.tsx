@@ -35,7 +35,12 @@ export function ScoreSummary({ totalScore, rubric, dimensionAverages }: ScoreSum
         </thead>
         <tbody>
           {rubric.dimensions.map((dimension) => {
-            const score = Math.round((dimensionAverages[dimension.id] ?? 0) * 100) / 100;
+            // Absent means no question assessed this dimension at all (see
+            // Question.dimensions) — omitted here rather than shown as a
+            // false, demoralizing 0/100 for something never actually asked.
+            const rawScore = dimensionAverages[dimension.id];
+            if (rawScore === undefined) return null;
+            const score = Math.round(rawScore * 100) / 100;
             return (
               <tr key={dimension.id}>
                 <th scope="row">{dimension.label}</th>

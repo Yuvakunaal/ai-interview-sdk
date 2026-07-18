@@ -15,6 +15,21 @@ export interface Question {
   difficulty?: 'easy' | 'medium' | 'hard';
   /** Overrides the session-wide `maxFollowUpDepth` for this question only — see `FollowUpEngine`. */
   maxFollowUps?: number;
+  /**
+   * The subset of your rubric's dimension ids this specific question
+   * actually assesses. Omit to have every question assess every rubric
+   * dimension (the previous, still-fully-supported default) — set this
+   * when your rubric has a dimension that doesn't apply to every question
+   * (e.g. a "Systems thinking" dimension has nothing to grade on a plain
+   * syntax-recall question like "What does a WHERE clause do?"). A
+   * dimension no question declares is never scored, never dragged to 0,
+   * and never shown in the report at all — rather than the previous
+   * behavior of silently scoring it 0 on every question that didn't
+   * address it, which both understated the candidate's real total score
+   * and read as a false, demoralizing failure on something they were never
+   * actually asked about.
+   */
+  dimensions?: string[];
 }
 
 export interface RubricDimensionInput {
@@ -61,6 +76,11 @@ export interface ConceptCoverageResult {
 
 export interface EvaluationResult {
   questionId: string;
+  /**
+   * Only ever has an entry for a dimension this question actually assessed
+   * (all of them, unless `Question.dimensions` narrowed it) — a dimension
+   * outside that set is simply absent here, not present at 0.
+   */
   dimensionScores: Record<string, number>;
   totalScore: number;
   conceptCoverage: ConceptCoverageResult[];
