@@ -26,3 +26,5 @@ figma design/
 .eslintcache
 .cache/
 .vite/
+.vercel
+.env*
