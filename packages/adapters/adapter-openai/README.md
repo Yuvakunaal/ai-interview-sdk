@@ -1,5 +1,7 @@
 # @interview-sdk/adapter-openai
 
+[![npm](https://img.shields.io/npm/v/@interview-sdk/adapter-openai.svg)](https://www.npmjs.com/package/@interview-sdk/adapter-openai)
+
 OpenAI provider adapter for `@interview-sdk/core`, built on the official
 `openai` SDK's **Responses API** (`client.responses.create`) — OpenAI's
 current recommended interface, though the older Chat Completions API remains

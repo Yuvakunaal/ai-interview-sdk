@@ -97,6 +97,7 @@ const SPEC_ROWS: SpecRow[] = [
 ];
 
 const GITHUB_URL = 'https://github.com/Yuvakunaal/ai-interview-sdk';
+const NPM_URL = 'https://www.npmjs.com/package/@interview-sdk/core';
 
 export function App() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -141,6 +142,9 @@ export function App() {
             </a>
             <a href="/docs" onClick={closeMenu}>
               Docs
+            </a>
+            <a href={NPM_URL} target="_blank" rel="noopener noreferrer" onClick={closeMenu}>
+              npm ↗
             </a>
             <a
               className="nav-github"
@@ -332,12 +336,19 @@ export function App() {
       </main>
 
       <footer className="footer wrap">
-        <pre className="tree">{'@interview-sdk/\n├── '}<b>core</b>
-          {'        flow, evaluation, rubric, follow-up engine\n├── '}<b>react</b>
-          {'       InterviewWidget, MicButton, QuestionCard, ReportCard…\n├── '}<b>server</b>
-          {'      production scoring, HMAC signing, webhooks\n├── '}<b>cli</b>
-          {'         scaffolding, simulator, bias harness\n└── '}<b>adapter-*</b>
-          {'   openai · claude · gemini · deepgram · elevenlabs'}</pre>
+        <pre className="tree">
+          {'@interview-sdk/\n├── '}
+          <a href="https://www.npmjs.com/package/@interview-sdk/core" target="_blank" rel="noopener noreferrer">core</a>
+          {'        flow, evaluation, rubric, follow-up engine\n├── '}
+          <a href="https://www.npmjs.com/package/@interview-sdk/react" target="_blank" rel="noopener noreferrer">react</a>
+          {'       InterviewWidget, MicButton, QuestionCard, ReportCard…\n├── '}
+          <a href="https://www.npmjs.com/package/@interview-sdk/server" target="_blank" rel="noopener noreferrer">server</a>
+          {'      production scoring, HMAC signing, webhooks\n├── '}
+          <a href="https://www.npmjs.com/package/@interview-sdk/cli" target="_blank" rel="noopener noreferrer">cli</a>
+          {'         scaffolding, simulator, bias harness\n└── '}
+          <a href="https://www.npmjs.com/org/interview-sdk" target="_blank" rel="noopener noreferrer">adapter-*</a>
+          {'   openai · claude · gemini · deepgram · elevenlabs'}
+        </pre>
         <p className="footer-note">
           MIT licensed. Self-hosted. Maintained at{' '}
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">

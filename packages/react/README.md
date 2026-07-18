@@ -1,5 +1,7 @@
 # @interview-sdk/react
 
+[![npm](https://img.shields.io/npm/v/@interview-sdk/react.svg)](https://www.npmjs.com/package/@interview-sdk/react)
+
 React components and hooks for embedding AI-powered interviews:
 `InterviewWidget`, `MicButton`, `QuestionCard`, `ReportCard`,
 `TranscriptViewer`, `ScoreSummary`, and the `useInterview` hook that wires

@@ -1,5 +1,7 @@
 # @interview-sdk/core
 
+[![npm](https://img.shields.io/npm/v/@interview-sdk/core.svg)](https://www.npmjs.com/package/@interview-sdk/core)
+
 Framework-independent flow, evaluation, rubric, and follow-up engine for
 AI-powered interviews. This is the shared logic layer used by both
 `@interview-sdk/react` (client-side / prototyping) and `@interview-sdk/server`

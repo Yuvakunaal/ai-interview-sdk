@@ -18,6 +18,13 @@ export default function QuickStart() {
         follow <Link href="/production">Production Setup</Link> instead — the widget code barely changes.
       </p>
 
+      <Callout type="tip">
+        Designing the questions and rubric by hand below works fine, but{' '}
+        <Link href="/dashboard">the Local Dashboard</Link> (
+        <code>npx @interview-sdk/cli dashboard</code>) lets you do it visually first — live
+        preview, no API key — then copies out this exact integration code for you.
+      </Callout>
+
       <h2>1. Install</h2>
       <CodeBlock lang="bash" filename="terminal">
         {`npm install @interview-sdk/core @interview-sdk/react @interview-sdk/adapter-openai`}
@@ -75,15 +82,43 @@ export default function App() {
       </CodeBlock>
       <p>
         That&apos;s a full interview: dynamic follow-ups, semantic evaluation, rubric scoring, and a
-        report — with voice input if you also register a{' '}
-        <Link href="/integrations/providers">voice provider adapter</Link> and pass its{' '}
-        <code>transcribe</code> function to <code>InterviewWidget</code>.
+        report.
       </p>
 
       <Callout type="warning">
         Client Mode refuses to render when <code>NODE_ENV=production</code> unless you pass{' '}
         <code>allowClientModeInProduction</code> explicitly — it&apos;s not a soft warning,
         it&apos;s a hard stop, on purpose.
+      </Callout>
+
+      <h2>6. Add voice (optional)</h2>
+      <p>
+        Same prototyping pattern as the text adapter above: register a{' '}
+        <Link href="/integrations/providers">voice provider adapter</Link> and pass its{' '}
+        <code>synthesize</code>/<code>transcribe</code> functions straight to{' '}
+        <code>InterviewWidget</code>. ElevenLabs handles both directions on its own (speaks the
+        question, transcribes the recorded answer), so a single adapter is enough:
+      </p>
+      <CodeBlock lang="tsx" filename="App.tsx">
+        {`import { ElevenLabsAdapter } from '@interview-sdk/adapter-elevenlabs';
+
+const voice = new ElevenLabsAdapter({ apiKey: process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY });
+
+<InterviewWidget
+  questions={questions}
+  rubric={rubric}
+  mode="client"
+  adapter={adapter}
+  synthesize={(text) => voice.synthesize(text)}
+  transcribe={async (audio) => (await voice.transcribe(await audio.arrayBuffer())).text}
+  onSessionEnd={(report) => console.log(report)}
+/>`}
+      </CodeBlock>
+      <Callout type="note">
+        The SDK&apos;s default voice is ElevenLabs&apos; prebuilt &quot;Rachel&quot; — a paid-plan
+        library voice. A free-tier key gets a real 402 on it; pass a premade voice your plan can
+        actually use via <code>voiceId</code>, e.g. <code>new ElevenLabsAdapter({'{'} apiKey,
+        voiceId: &apos;pNInz6obpgDQGcFmaJgB&apos; {'}'})</code> (&quot;Adam&quot;).
       </Callout>
 
       <h2>Next: ship it for real</h2>

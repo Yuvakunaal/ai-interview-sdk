@@ -1,5 +1,7 @@
 # @interview-sdk/server
 
+[![npm](https://img.shields.io/npm/v/@interview-sdk/server.svg)](https://www.npmjs.com/package/@interview-sdk/server)
+
 Production-mode (Server Mode) evaluation, scoring, and signing. This is the
 security-critical package: AI keys never reach the browser, the score is
 computed against your own server-side question bank and rubric (never the

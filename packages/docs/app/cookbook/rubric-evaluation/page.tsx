@@ -31,6 +31,30 @@ export default function RubricCookbook() {
         buried inside the first evaluation call.
       </p>
 
+      <h2>Not every dimension has to apply to every question</h2>
+      <p>
+        A &quot;Systems thinking&quot; dimension makes sense for a design question, but has nothing
+        to grade on &quot;What does a SQL <code>WHERE</code> clause do?&quot; — without telling the
+        SDK that, every such question scores 0 on that dimension, understating the candidate&apos;s
+        real total and reading as a false, demoralizing failure at something they were never
+        actually asked about. Set <code>dimensions</code> on the question to just the rubric
+        dimension ids it assesses:
+      </p>
+      <CodeBlock lang="ts">
+        {`{
+  id: 'q1',
+  prompt: 'What does a WHERE clause do?',
+  concepts: ['filter', 'condition'],
+  dimensions: ['technical', 'communication'], // this rubric's "systems" doesn't apply here
+}`}
+      </CodeBlock>
+      <p>
+        That question&apos;s score is computed from only the dimensions it lists (re-normalized so
+        it can still reach 100%), and any dimension outside that list never appears for it at
+        all — not present at a misleading 0. Omit <code>dimensions</code> entirely and a question
+        assesses every rubric dimension, same as before.
+      </p>
+
       <h2>Each dimension is scored 0–100, then weighted and clamped</h2>
       <p>
         The AI provider returns a raw <code>dimensionScores</code> object; a score outside 0–100 is

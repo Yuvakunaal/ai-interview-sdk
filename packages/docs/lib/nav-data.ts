@@ -39,6 +39,11 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Saving results',
         description: 'Store every interview report in your own database, verified.',
       },
+      {
+        href: '/ai-agent-setup',
+        label: 'Set up with an AI agent',
+        description: 'A copy-pasteable prompt for Claude Code, Cursor, or similar.',
+      },
     ],
   },
   {

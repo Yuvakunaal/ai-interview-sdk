@@ -1,5 +1,7 @@
 # @interview-sdk/adapter-gemini
 
+[![npm](https://img.shields.io/npm/v/@interview-sdk/adapter-gemini.svg)](https://www.npmjs.com/package/@interview-sdk/adapter-gemini)
+
 Google Gemini provider adapter for `@interview-sdk/core`, built on
 `@google/genai` — Google's current unified SDK. The older
 `@google/generative-ai` package reached end-of-life on 2025-11-30; this

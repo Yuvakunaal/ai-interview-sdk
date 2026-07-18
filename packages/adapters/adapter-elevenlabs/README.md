@@ -1,5 +1,7 @@
 # @interview-sdk/adapter-elevenlabs
 
+[![npm](https://img.shields.io/npm/v/@interview-sdk/adapter-elevenlabs.svg)](https://www.npmjs.com/package/@interview-sdk/adapter-elevenlabs)
+
 ElevenLabs voice provider adapter for `@interview-sdk/core`, built on
 `@elevenlabs/elevenlabs-js` — the current package (the unscoped `elevenlabs`
 package is deprecated and has moved here). Implements both `synthesize()`

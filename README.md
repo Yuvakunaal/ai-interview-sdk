@@ -1,5 +1,6 @@
 # AI Interview SDK
 
+[![npm](https://img.shields.io/npm/v/@interview-sdk/core.svg?label=npm)](https://www.npmjs.com/package/@interview-sdk/core)
 [![CI](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/codeql.yml/badge.svg)](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
@@ -109,23 +110,25 @@ for what this means for anyone proposing a new feature.
 
 ## Packages
 
-| Package                                                                       | Description                                                                                                 |
-| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| [`@interview-sdk/core`](./packages/core)                                      | Flow, evaluation, rubric, and follow-up engine                                                              |
-| [`@interview-sdk/react`](./packages/react)                                    | React components and hooks                                                                                  |
-| [`@interview-sdk/server`](./packages/server)                                  | Production-mode scoring and key isolation                                                                   |
-| [`@interview-sdk/coding`](./packages/coding)                                  | Standalone sandboxed code-execution + scoring engine for coding rounds — headless, bring your own editor UI |
-| [`@interview-sdk/cli`](./packages/cli)                                        | Scaffolding, local dashboard, Interview Simulator, Bias Harness                                             |
-| [`@interview-sdk/dashboard`](./packages/dashboard)                            | Internal, unpublished — the local customize-and-copy-code UI served by `interview-sdk dashboard`            |
-| [`@interview-sdk/adapter-openai`](./packages/adapters/adapter-openai)         | OpenAI provider adapter                                                                                     |
-| [`@interview-sdk/adapter-claude`](./packages/adapters/adapter-claude)         | Anthropic Claude provider adapter                                                                           |
-| [`@interview-sdk/adapter-gemini`](./packages/adapters/adapter-gemini)         | Google Gemini provider adapter                                                                              |
-| [`@interview-sdk/adapter-deepgram`](./packages/adapters/adapter-deepgram)     | Deepgram voice provider adapter                                                                             |
-| [`@interview-sdk/adapter-elevenlabs`](./packages/adapters/adapter-elevenlabs) | ElevenLabs voice provider adapter                                                                           |
-| [`docs`](./packages/docs)                                                     | Documentation site (static Next.js export)                                                                  |
-| [`@interview-sdk/landing`](./packages/landing)                                | Marketing/landing page — static React site, deployable standalone                                           |
-| [`examples/server-mode-nextjs`](./packages/examples/server-mode-nextjs)       | Runnable Server Mode example (Next.js)                                                                      |
-| [`examples/basic-demo`](./packages/examples/basic-demo)                       | Runnable Client Mode demo (Vite), mock adapter, no API key                                                  |
+Source links point at this repo; npm links go to the real, live, installable package.
+
+| Package                                                                       | npm                                                                                    | Description                                                                                                 |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [`@interview-sdk/core`](./packages/core)                                      | [npm](https://www.npmjs.com/package/@interview-sdk/core)                                | Flow, evaluation, rubric, and follow-up engine                                                              |
+| [`@interview-sdk/react`](./packages/react)                                    | [npm](https://www.npmjs.com/package/@interview-sdk/react)                               | React components and hooks                                                                                  |
+| [`@interview-sdk/server`](./packages/server)                                  | [npm](https://www.npmjs.com/package/@interview-sdk/server)                              | Production-mode scoring and key isolation                                                                   |
+| [`@interview-sdk/coding`](./packages/coding)                                  | [npm](https://www.npmjs.com/package/@interview-sdk/coding)                              | Standalone sandboxed code-execution + scoring engine for coding rounds — headless, bring your own editor UI |
+| [`@interview-sdk/cli`](./packages/cli)                                        | [npm](https://www.npmjs.com/package/@interview-sdk/cli)                                 | Scaffolding, local dashboard, Interview Simulator, Bias Harness                                             |
+| [`@interview-sdk/dashboard`](./packages/dashboard)                            | —                                                                                         | Internal, unpublished — the local customize-and-copy-code UI served by `interview-sdk dashboard`            |
+| [`@interview-sdk/adapter-openai`](./packages/adapters/adapter-openai)         | [npm](https://www.npmjs.com/package/@interview-sdk/adapter-openai)                      | OpenAI provider adapter                                                                                     |
+| [`@interview-sdk/adapter-claude`](./packages/adapters/adapter-claude)         | [npm](https://www.npmjs.com/package/@interview-sdk/adapter-claude)                      | Anthropic Claude provider adapter                                                                           |
+| [`@interview-sdk/adapter-gemini`](./packages/adapters/adapter-gemini)         | [npm](https://www.npmjs.com/package/@interview-sdk/adapter-gemini)                       | Google Gemini provider adapter                                                                              |
+| [`@interview-sdk/adapter-deepgram`](./packages/adapters/adapter-deepgram)     | [npm](https://www.npmjs.com/package/@interview-sdk/adapter-deepgram)                    | Deepgram voice provider adapter                                                                              |
+| [`@interview-sdk/adapter-elevenlabs`](./packages/adapters/adapter-elevenlabs) | [npm](https://www.npmjs.com/package/@interview-sdk/adapter-elevenlabs)                  | ElevenLabs voice provider adapter                                                                            |
+| [`docs`](./packages/docs)                                                     | —                                                                                         | Documentation site (static Next.js export)                                                                  |
+| [`@interview-sdk/landing`](./packages/landing)                                | —                                                                                         | Marketing/landing page — static React site, deployable standalone                                           |
+| [`examples/server-mode-nextjs`](./packages/examples/server-mode-nextjs)       | —                                                                                         | Runnable Server Mode example (Next.js)                                                                      |
+| [`examples/basic-demo`](./packages/examples/basic-demo)                       | —                                                                                         | Runnable Client Mode demo (Vite), mock adapter, no API key                                                  |
 
 ## Docs & examples
 

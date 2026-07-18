@@ -1,5 +1,7 @@
 # @interview-sdk/cli
 
+[![npm](https://img.shields.io/npm/v/@interview-sdk/cli.svg)](https://www.npmjs.com/package/@interview-sdk/cli)
+
 Scaffolding, the Interview Simulator, the Bias & Consistency Testing
 Harness, and question-pack tooling — all of it running locally or in your
 own CI. No maintainer-hosted service is involved (Zero-Infra Guarantee).

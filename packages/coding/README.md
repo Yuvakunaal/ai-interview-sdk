@@ -1,5 +1,7 @@
 # @interview-sdk/coding
 
+[![npm](https://img.shields.io/npm/v/@interview-sdk/coding.svg)](https://www.npmjs.com/package/@interview-sdk/coding)
+
 Sandboxed code execution and evaluation for Coding Interview Mode: compile/
 runtime error handling, timeout/infinite-loop detection, partial-solution
 scoring, an empirical complexity check, and hardcoded-solution detection.

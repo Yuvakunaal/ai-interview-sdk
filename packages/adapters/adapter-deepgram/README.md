@@ -1,5 +1,7 @@
 # @interview-sdk/adapter-deepgram
 
+[![npm](https://img.shields.io/npm/v/@interview-sdk/adapter-deepgram.svg)](https://www.npmjs.com/package/@interview-sdk/adapter-deepgram)
+
 Deepgram voice provider adapter for `@interview-sdk/core`, built on
 `@deepgram/sdk` v5. Implements both `transcribe()` (speech-to-text, the
 primary use case) and `synthesize()` (Deepgram also ships TTS).

@@ -68,6 +68,14 @@ export function Nav() {
 
         <a
           className="docs-nav-github"
+          href="https://www.npmjs.com/org/interview-sdk"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          npm ↗
+        </a>
+        <a
+          className="docs-nav-github"
           href="https://github.com/Yuvakunaal/ai-interview-sdk"
           target="_blank"
           rel="noopener noreferrer"

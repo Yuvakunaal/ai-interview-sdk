@@ -1,5 +1,7 @@
 # @interview-sdk/adapter-claude
 
+[![npm](https://img.shields.io/npm/v/@interview-sdk/adapter-claude.svg)](https://www.npmjs.com/package/@interview-sdk/adapter-claude)
+
 Anthropic Claude provider adapter for `@interview-sdk/core`, built on the
 official `@anthropic-ai/sdk` (Messages API).
 
