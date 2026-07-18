@@ -24,6 +24,8 @@ export interface QuestionAudioProps {
   showLevelMeter?: boolean;
   /** Mutes the underlying <audio> element's output — playback (and onPlaybackStart/onPlaybackEnd turn-state) still runs normally, only the sound is silenced. Defaults to false. */
   muted?: boolean;
+  /** A short label (e.g. "AI") centered in the orb while not speaking, so the tile reads as an identity, not a bare circle — replaced by the live level meter once playback actually starts. Omit for the orb's previous meter-only behavior. */
+  avatarLabel?: string;
 }
 
 type Status = 'loading' | 'ready' | 'error';
@@ -43,6 +45,7 @@ export function QuestionAudio({
   onPlaybackEnd,
   showLevelMeter = true,
   muted = false,
+  avatarLabel,
 }: QuestionAudioProps) {
   // A state-backed ref (not useRef): the level-meter hook below needs to
   // react to the element becoming available, and reading a plain ref's
@@ -157,7 +160,13 @@ export function QuestionAudio({
               : 'isdk-question-audio__orb'
           }
         >
-          <AudioLevelMeter levels={levels} variant="speaking" isIdle={!isSupported || !isPlaying} />
+          {avatarLabel && !isPlaying ? (
+            <span className="isdk-question-audio__orb-label" aria-hidden="true">
+              {avatarLabel}
+            </span>
+          ) : (
+            <AudioLevelMeter levels={levels} variant="speaking" isIdle={!isSupported || !isPlaying} />
+          )}
         </span>
       )}
       <button

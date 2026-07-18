@@ -1,3 +1,4 @@
+import type { SynthesisResult } from '@interview-sdk/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -159,7 +160,7 @@ describe('QuestionCard', () => {
     await expect(user.paste('some text')).resolves.not.toThrow();
   });
 
-  it('submits an empty string when the candidate submits without typing anything', async () => {
+  it('disables Submit answer when the answer is empty, and never calls onSubmit for a blank answer', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
     render(
@@ -171,9 +172,32 @@ describe('QuestionCard', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Submit answer' }));
+    const submitButton = screen.getByRole('button', { name: 'Submit answer' });
+    expect(submitButton).toBeDisabled();
 
-    expect(onSubmit).toHaveBeenCalledWith('');
+    await user.click(submitButton);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('disables Submit answer for whitespace-only text, and enables it once real text is typed', async () => {
+    const user = userEvent.setup();
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    const textarea = screen.getByLabelText('Your answer');
+    const submitButton = screen.getByRole('button', { name: 'Submit answer' });
+
+    await user.type(textarea, '   ');
+    expect(submitButton).toBeDisabled();
+
+    await user.type(textarea, 'a real answer');
+    expect(submitButton).toBeEnabled();
   });
 
   it('shows a hint when provided', () => {
@@ -285,6 +309,30 @@ describe('QuestionCard', () => {
     );
   });
 
+  it('disables Submit answer while recording (the answer box reads empty until the transcript lands), then re-enables it once the transcript arrives', async () => {
+    const user = userEvent.setup();
+    const transcribe = vi.fn(async () => 'it uses buckets');
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        transcribe={transcribe}
+        createRecorder={vi.fn(async () => ({ stop: vi.fn(async () => new Blob(['audio'])) }))}
+      />,
+    );
+
+    const submitButton = screen.getByRole('button', { name: 'Submit answer' });
+    expect(submitButton).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Record answer' }));
+    expect(submitButton).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Stop recording' }));
+    await waitFor(() => expect(submitButton).toBeEnabled());
+  });
+
   it('does not speak the prompt in silent mode (no synthesize prop)', () => {
     render(
       <QuestionCard
@@ -328,6 +376,33 @@ describe('QuestionCard', () => {
 
     playSpy.mockRestore();
     vi.unstubAllGlobals();
+  });
+
+  it('shows an "AI" identity label in the AI tile\'s circle instead of a bare circle, before speaking starts', () => {
+    const synthesize = vi.fn(() => new Promise<SynthesisResult>(() => {})); // never resolves — stays in the pre-playback state
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        synthesize={synthesize}
+      />,
+    );
+    expect(screen.getByText('AI', { selector: '.isdk-question-audio__orb-label' })).toBeInTheDocument();
+  });
+
+  it('shows the same "AI" identity label in voice-enabled mode with no synthesize (transcribe-only)', () => {
+    render(
+      <QuestionCard
+        prompt="Explain hash maps."
+        questionNumber={1}
+        totalQuestions={1}
+        onSubmit={vi.fn()}
+        transcribe={vi.fn(async () => 'answer')}
+      />,
+    );
+    expect(screen.getByText('AI', { selector: '.isdk-question-audio__orb-label' })).toBeInTheDocument();
   });
 
   it('speaks every subsequent question too, not just the first one', async () => {

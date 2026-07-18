@@ -146,10 +146,15 @@ function QuestionCardBody({
   const isBusy = disabled || isSubmitting;
   const hasVoice = Boolean(synthesize || transcribe);
   const isAiSpeaking = voiceTurn === 'ai_speaking';
+  // A transcript only lands in the answer box once recording actually
+  // stops, so the box reads empty the whole time recording is in progress —
+  // without this, "Submit answer" stayed clickable through that window and
+  // would silently submit a blank answer if clicked mid-recording.
+  const canSubmit = !isBusy && !isRecording && answerText.trim().length > 0;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isBusy) return;
+    if (!canSubmit) return;
     onSubmit(answerText);
     setAnswerText('');
   };
@@ -212,10 +217,11 @@ function QuestionCardBody({
                 onError={handleVoiceError}
                 onPlaybackStart={() => setVoiceTurn('ai_speaking')}
                 onPlaybackEnd={() => setVoiceTurn('candidate_turn')}
+                avatarLabel="AI"
               />
             ) : (
               <span className="isdk-question-audio__orb" aria-hidden="true">
-                <AudioLevelMeter levels={[]} variant="speaking" isIdle />
+                <span className="isdk-question-audio__orb-label">AI</span>
               </span>
             )}
             <span className="isdk-question-card__tile-status">
@@ -408,14 +414,14 @@ function QuestionCardBody({
                 </button>
               )}
 
-              <button className="isdk-btn isdk-btn--primary" type="submit" disabled={isBusy}>
+              <button className="isdk-btn isdk-btn--primary" type="submit" disabled={!canSubmit}>
                 Submit answer
               </button>
             </div>
           </div>
         ) : (
           <div className="isdk-question-card__actions">
-            <button className="isdk-btn isdk-btn--primary" type="submit" disabled={isBusy}>
+            <button className="isdk-btn isdk-btn--primary" type="submit" disabled={!canSubmit}>
               Submit answer
             </button>
             {onRequestHint && (

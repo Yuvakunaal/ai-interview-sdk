@@ -937,6 +937,17 @@
     box-shadow 0.25s ease;
 }
 
+/* The AI tile's identity mark while idle — same role as
+   .isdk-question-card__avatar's initial for the candidate tile, so neither
+   side of the stage reads as a bare, unlabeled circle. Swapped out for the
+   live level meter the instant playback actually starts. */
+.isdk-question-audio__orb-label {
+  font-family: var(--isdk-font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--isdk-ink-soft);
+}
+
 .isdk-question-audio__orb--active {
   border-color: var(--isdk-accent);
   box-shadow:

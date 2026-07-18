@@ -166,6 +166,7 @@ describe('InterviewWidget', () => {
 
     expect(screen.getByLabelText('Hint')).toHaveTextContent('hashing, collisions');
 
+    await user.type(screen.getByLabelText('Your answer'), 'It uses buckets.');
     await user.click(screen.getByRole('button', { name: 'Submit answer' }));
 
     await waitFor(() =>
@@ -363,7 +364,7 @@ describe('InterviewWidget', () => {
       createObjectURL: vi.fn(() => 'blob:fake-url'),
       revokeObjectURL: vi.fn(),
     });
-    const adapter = fakeAdapter(['{}']);
+    const adapter = fakeAdapter([JSON.stringify({ dimensionScores: { technical: 90 } })]);
     const synthesize = vi.fn(async () => ({
       audio: new ArrayBuffer(4),
       mimeType: 'audio/mpeg',
@@ -382,6 +383,7 @@ describe('InterviewWidget', () => {
     await user.click(screen.getByRole('button', { name: 'Start interview' }));
     await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
 
+    await user.type(screen.getByLabelText('Your answer'), 'It uses buckets.');
     await user.click(screen.getByRole('button', { name: 'Submit answer' }));
 
     await waitFor(() =>
