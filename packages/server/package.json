@@ -58,6 +58,6 @@
     "@interview-sdk/core": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0"
+    "@types/node": "^26.1.1"
   }
 }
