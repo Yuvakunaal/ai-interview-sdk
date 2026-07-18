@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Callout } from '../../components/Callout';
 import { CodeBlock } from '../../components/CodeBlock';
 
@@ -74,7 +75,7 @@ export default function StylingAndComposition() {
                 <code>resume</code>/<code>submitAnswer</code>/<code>retryLastAnswer</code>, the
                 final report, and <code>getSnapshot</code>/<code>events</code> for session
                 persistence and analytics (see{' '}
-                <a href="/session-persistence-and-events">Session persistence &amp; events</a>).
+                <Link href="/session-persistence-and-events">Session persistence &amp; events</Link>).
               </td>
             </tr>
             <tr>

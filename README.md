@@ -7,6 +7,8 @@
 [![Node >= 20.19](https://img.shields.io/badge/node-%3E%3D20.19-339933?logo=node.js&logoColor=white)](#development)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-8A641F.svg)](./CONTRIBUTING.md)
 
+**[Live site](https://ai-interview-sdk.vercel.app) · [Documentation](https://ai-interview-sdk.vercel.app/docs) · [Quick Start](https://ai-interview-sdk.vercel.app/docs/quick-start)**
+
 **Drop an AI-scored interview into your own product as one React component —
 your API keys, your backend, your database, end to end.** The maintainers
 never see, store, or process a single candidate's answer.
@@ -39,19 +41,17 @@ That's a full interview — dynamic follow-ups, semantic evaluation, rubric
 scoring, voice input, and a report — in prototyping (Client) Mode. Swap
 `mode="client"` + `adapter` for `mode="server"` + `apiBaseUrl` and the exact
 same widget talks to your own backend instead, where the AI key actually
-belongs. The [documentation site](./packages/docs) isn't deployed anywhere
-live yet — run it locally (`pnpm --filter @interview-sdk/docs dev`, then open
-`/quick-start`), or go straight to a working example:
+belongs. Read the [documentation site](https://ai-interview-sdk.vercel.app/docs)
+live, or go straight to a working example:
 [`packages/examples/server-mode-nextjs`](./packages/examples/server-mode-nextjs)
 (production path) or [`packages/examples/basic-demo`](./packages/examples/basic-demo)
 (prototyping path) — both run with zero setup.
 
 > **Status:** the initial 9-phase build (see [Build Status](#build-status))
-> is complete — every package below is implemented and tested. Nothing has
-> been published to npm yet (every package is still at `0.0.0`), so treat
-> this as a pre-release snapshot, not an installable release. See
-> [EDGE_CASES.md](./EDGE_CASES.md) for an honest, line-by-line audit of what
-> is and isn't covered — it names real gaps, not just what shipped.
+> is complete, and every package below is published on npm and installable
+> today. See [EDGE_CASES.md](./EDGE_CASES.md) for an honest, line-by-line
+> audit of what is and isn't covered — it names real gaps, not just what
+> shipped.
 
 ## Highlights
 
@@ -125,8 +125,8 @@ Source links point at this repo; npm links go to the real, live, installable pac
 | [`@interview-sdk/adapter-gemini`](./packages/adapters/adapter-gemini)         | [npm](https://www.npmjs.com/package/@interview-sdk/adapter-gemini)                       | Google Gemini provider adapter                                                                              |
 | [`@interview-sdk/adapter-deepgram`](./packages/adapters/adapter-deepgram)     | [npm](https://www.npmjs.com/package/@interview-sdk/adapter-deepgram)                    | Deepgram voice provider adapter                                                                              |
 | [`@interview-sdk/adapter-elevenlabs`](./packages/adapters/adapter-elevenlabs) | [npm](https://www.npmjs.com/package/@interview-sdk/adapter-elevenlabs)                  | ElevenLabs voice provider adapter                                                                            |
-| [`docs`](./packages/docs)                                                     | —                                                                                         | Documentation site (static Next.js export)                                                                  |
-| [`@interview-sdk/landing`](./packages/landing)                                | —                                                                                         | Marketing/landing page — static React site, deployable standalone                                           |
+| [`docs`](./packages/docs)                                                     | [live](https://ai-interview-sdk.vercel.app/docs)                                          | Documentation site (static Next.js export)                                                                  |
+| [`@interview-sdk/landing`](./packages/landing)                                | [live](https://ai-interview-sdk.vercel.app)                                                | Marketing/landing page — static React site, deployable standalone                                           |
 | [`examples/server-mode-nextjs`](./packages/examples/server-mode-nextjs)       | —                                                                                         | Runnable Server Mode example (Next.js)                                                                      |
 | [`examples/basic-demo`](./packages/examples/basic-demo)                       | —                                                                                         | Runnable Client Mode demo (Vite), mock adapter, no API key                                                  |
 
@@ -136,16 +136,18 @@ Source links point at this repo; npm links go to the real, live, installable pac
   tool to customize your question set, runtime mode, and theme against a
   live preview, then copy the exact integration code for your app. See
   [`@interview-sdk/cli`](./packages/cli).
-- **[Documentation site](./packages/docs)** — sidebar navigation, client-side
-  search, dark mode, and syntax-highlighted code samples, covering the Local
-  Dashboard, Quick Start, Production Setup, React/Next.js integration,
-  AI & voice provider guides, the rubric/evaluation cookbook, styling &
-  composition, error handling & resilience, session persistence & events,
-  Coding Interview Mode, security & compliance, and the Interview
-  Simulator/Bias Harness walkthrough. It's wired to serve under `/docs`
-  alongside [`@interview-sdk/landing`](./packages/landing) — run
-  `pnpm build:site` to build both and compose them into one static tree, or
-  `pnpm --filter @interview-sdk/docs dev` to run the docs site alone.
+- **[Documentation site](https://ai-interview-sdk.vercel.app/docs)** — live
+  at `/docs`, with sidebar navigation, client-side search, dark mode, and
+  syntax-highlighted code samples, covering the Local Dashboard, Quick Start,
+  Production Setup, React/Next.js integration, AI & voice provider guides,
+  the rubric/evaluation cookbook, styling & composition, error handling &
+  resilience, session persistence & events, Coding Interview Mode, security &
+  compliance, and the Interview Simulator/Bias Harness walkthrough. Source is
+  [`packages/docs`](./packages/docs); it composes with
+  [`@interview-sdk/landing`](./packages/landing) into one static tree via
+  `pnpm build:site` (see [`vercel.json`](./vercel.json) for how this repo
+  deploys that composed tree), or run `pnpm --filter @interview-sdk/docs dev`
+  to work on the docs site alone.
 - **[`examples/server-mode-nextjs`](./packages/examples/server-mode-nextjs)**
   — the production path: `<InterviewWidget mode="server" />` talking to a
   real `@interview-sdk/server` route. Runs with zero setup (mock adapter by
