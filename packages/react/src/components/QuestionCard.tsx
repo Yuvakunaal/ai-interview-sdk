@@ -200,61 +200,76 @@ function QuestionCardBody({
       )}
 
       {hasVoice && (
-        <div className="isdk-question-card__stage">
+        <div className="isdk-question-card__channel">
           <div
             className={
               isAiSpeaking
-                ? 'isdk-question-card__ai-tile isdk-question-card__tile--active'
-                : 'isdk-question-card__ai-tile'
+                ? 'isdk-question-card__party isdk-question-card__party--ai isdk-question-card__party--active'
+                : 'isdk-question-card__party isdk-question-card__party--ai'
             }
           >
-            <span className="isdk-question-card__tile-label">AI Interviewer</span>
-            {synthesize ? (
-              <QuestionAudio
-                text={prompt}
-                synthesize={synthesize}
-                muted={speakerMuted}
-                onError={handleVoiceError}
-                onPlaybackStart={() => setVoiceTurn('ai_speaking')}
-                onPlaybackEnd={() => setVoiceTurn('candidate_turn')}
-                avatarLabel="AI"
-              />
-            ) : (
-              <span className="isdk-question-audio__orb" aria-hidden="true">
-                <span className="isdk-question-audio__orb-label">AI</span>
+            <span className="isdk-question-card__party-avatar">
+              {synthesize ? (
+                <QuestionAudio
+                  text={prompt}
+                  synthesize={synthesize}
+                  muted={speakerMuted}
+                  onError={handleVoiceError}
+                  onPlaybackStart={() => setVoiceTurn('ai_speaking')}
+                  onPlaybackEnd={() => setVoiceTurn('candidate_turn')}
+                  avatarLabel="AI"
+                />
+              ) : (
+                <span className="isdk-question-audio__orb" aria-hidden="true">
+                  <span className="isdk-question-audio__orb-label">AI</span>
+                </span>
+              )}
+            </span>
+            <span className="isdk-question-card__party-meta">
+              <span className="isdk-question-card__party-name">AI Interviewer</span>
+              <span className="isdk-question-card__party-status">
+                {isAiSpeaking ? 'Speaking' : 'Listening'}
               </span>
-            )}
-            <span className="isdk-question-card__tile-status">
-              {isAiSpeaking ? 'Speaking' : 'Listening'}
             </span>
           </div>
+
+          <span className="isdk-question-card__channel-link" aria-hidden="true">
+            <span className="isdk-question-card__channel-link-dot" />
+            <span className="isdk-question-card__channel-link-dot" />
+            <span className="isdk-question-card__channel-link-dot" />
+          </span>
 
           <div
             className={
               isRecording
-                ? 'isdk-question-card__candidate-tile isdk-question-card__tile--active'
-                : 'isdk-question-card__candidate-tile'
+                ? 'isdk-question-card__party isdk-question-card__party--candidate isdk-question-card__party--active'
+                : 'isdk-question-card__party isdk-question-card__party--candidate'
             }
           >
-            <span className="isdk-question-card__avatar" aria-hidden="true">
-              {initialOf(candidateName)}
+            <span className="isdk-question-card__party-meta isdk-question-card__party-meta--right">
+              <span className="isdk-question-card__party-name">{candidateName}</span>
+              <span className="isdk-question-card__party-status">
+                {isRecording ? 'Recording' : 'Muted'}
+              </span>
             </span>
-            <span className="isdk-question-card__tile-label isdk-question-card__tile-label--name">
-              {candidateName}
-            </span>
-            <AudioLevelMeter
-              levels={candidateLevels}
-              variant="listening"
-              isIdle={!candidateMeterSupported}
-            />
-            <span className="isdk-question-card__tile-status">
-              {isRecording ? 'Recording' : 'Muted'}
+            <span className="isdk-question-card__party-avatar">
+              <span className="isdk-question-card__avatar-mark" aria-hidden="true">
+                {initialOf(candidateName)}
+              </span>
+              <AudioLevelMeter
+                levels={candidateLevels}
+                variant="listening"
+                isIdle={!candidateMeterSupported}
+              />
             </span>
           </div>
         </div>
       )}
 
       <div className="isdk-question-card__caption">
+        <span className="isdk-question-card__index" aria-hidden="true">
+          {String(questionNumber).padStart(2, '0')}
+        </span>
         {/* Not a live region — this whole subtree remounts per prompt (see
             QuestionCard above), so aria-live here would never fire. The
             visually-hidden announcer in the non-remounting wrapper covers it. */}
@@ -303,7 +318,8 @@ function QuestionCardBody({
           <div className="isdk-question-card__session-row">
             {elapsedLabel && (
               <div className="isdk-question-card__timer">
-                <span className="isdk-tabular">{elapsedLabel}</span>
+                <span className="isdk-question-card__timer-label">Session</span>
+                <span className="isdk-tabular isdk-question-card__timer-value">{elapsedLabel}</span>
                 {typeof elapsedFraction === 'number' && (
                   <span className="isdk-question-card__timer-bar" aria-hidden="true">
                     <span

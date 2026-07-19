@@ -35,46 +35,54 @@ export function TranscriptChat({
   }, [transcript.length]);
 
   if (transcript.length === 0) {
-    return <p className="isdk-transcript-chat__empty">No messages yet.</p>;
+    return (
+      <div className="isdk-transcript-chat-wrap">
+        <p className="isdk-kicker">Transcript</p>
+        <p className="isdk-transcript-chat__empty">Nothing recorded yet — this fills in as you answer.</p>
+      </div>
+    );
   }
 
   // This is a scrollable region taller than its viewport with no focusable
   // descendants — without tabIndex, a keyboard-only user has no way to
   // scroll it once the conversation grows past the visible height.
   return (
-    <ol
-      className="isdk-transcript-chat"
-      aria-label="Interview transcript"
-      role="log"
-      aria-live="polite"
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-      tabIndex={0}
-    >
-      {transcript.map((entry, index) => (
-        <li className="isdk-transcript-chat__group" key={`${entry.question.id}-${index}`}>
-          <div className="isdk-transcript-chat__bubble isdk-transcript-chat__bubble--ai">
-            <p className="isdk-transcript-chat__from">{assistantName}</p>
-            <p className="isdk-transcript-chat__text">{entry.prompt}</p>
-          </div>
-          <div className="isdk-transcript-chat__bubble isdk-transcript-chat__bubble--you">
-            <p className="isdk-transcript-chat__from">{candidateName}</p>
-            <p className="isdk-transcript-chat__text">{answerText(entry)}</p>
-          </div>
-          {entry.evaluation.rationale && (
-            <div
-              className="isdk-transcript-chat__bubble isdk-transcript-chat__bubble--note"
-              role="status"
-            >
-              <p className="isdk-transcript-chat__from isdk-transcript-chat__from--note">
-                <span className="isdk-transcript-chat__note-icon" aria-hidden="true" />
-                Feedback
-              </p>
-              <p className="isdk-transcript-chat__text">{entry.evaluation.rationale}</p>
+    <div className="isdk-transcript-chat-wrap">
+      <p className="isdk-kicker">Transcript</p>
+      <ol
+        className="isdk-transcript-chat"
+        aria-label="Interview transcript"
+        role="log"
+        aria-live="polite"
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+      >
+        {transcript.map((entry, index) => (
+          <li className="isdk-transcript-chat__group" key={`${entry.question.id}-${index}`}>
+            <div className="isdk-transcript-chat__bubble isdk-transcript-chat__bubble--ai">
+              <p className="isdk-transcript-chat__from">{assistantName}</p>
+              <p className="isdk-transcript-chat__text">{entry.prompt}</p>
             </div>
-          )}
-        </li>
-      ))}
-      <li ref={bottomRef} aria-hidden="true" />
-    </ol>
+            <div className="isdk-transcript-chat__bubble isdk-transcript-chat__bubble--you">
+              <p className="isdk-transcript-chat__from">{candidateName}</p>
+              <p className="isdk-transcript-chat__text">{answerText(entry)}</p>
+            </div>
+            {entry.evaluation.rationale && (
+              <div
+                className="isdk-transcript-chat__bubble isdk-transcript-chat__bubble--note"
+                role="status"
+              >
+                <p className="isdk-transcript-chat__from isdk-transcript-chat__from--note">
+                  <span className="isdk-transcript-chat__note-icon" aria-hidden="true" />
+                  Feedback
+                </p>
+                <p className="isdk-transcript-chat__text">{entry.evaluation.rationale}</p>
+              </div>
+            )}
+          </li>
+        ))}
+        <li ref={bottomRef} aria-hidden="true" />
+      </ol>
+    </div>
   );
 }

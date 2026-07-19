@@ -20,8 +20,10 @@ export function ScoreSummary({ totalScore, rubric, dimensionAverages }: ScoreSum
         Score Summary
       </h3>
       <p className="isdk-score-summary__total">
-        Overall score:{' '}
-        <strong className={`isdk-chip isdk-chip--${scoreTier(totalScore)} isdk-tabular`}>
+        <span className="isdk-score-summary__total-label">Overall score</span>
+        <strong
+          className={`isdk-chip isdk-chip--${scoreTier(totalScore)} isdk-tabular isdk-score-summary__total-value`}
+        >
           {totalScore}/100
         </strong>
       </p>

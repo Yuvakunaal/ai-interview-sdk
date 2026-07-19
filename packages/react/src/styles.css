@@ -283,168 +283,216 @@
   margin: 0;
 }
 
-/* ---------- call stage (AI presence + candidate self-view) ---------- */
+/* ---------- channel strip (AI presence + candidate self-view) ----------
+   Replaces the old two-big-tile "video call" layout with a single slim
+   instrument strip — this SDK isn't simulating a video call, it's running
+   a recorded, scored exchange, so the chrome recedes and the question
+   below (the actual content) gets the space and visual weight instead. */
 
-.isdk-question-card__stage {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: 0.75rem;
-  margin: 0 0 1.35rem;
+.isdk-question-card__channel {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  margin: 0 0 1.5rem;
+  border-radius: var(--isdk-radius-lg);
+  background: var(--isdk-neutral-bg);
+  border: 1px solid var(--isdk-rule);
 }
 
-.isdk-question-card__ai-tile,
-.isdk-question-card__candidate-tile {
+.isdk-question-card__party {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  /* Sized to its own content (not an even 50/50 split, which truncated
+     "AI Interviewer" while "You" sat in a half it didn't need) — the
+     connector between the two parties is what absorbs the slack. */
+  flex: 0 1 auto;
+  max-width: 60%;
+}
+
+.isdk-question-card__party--candidate {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.isdk-question-card__party-avatar {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  height: clamp(200px, 28vh, 260px);
-  /* Extra bottom padding keeps the centered content (avatar/orb + status
-     word) clear of the absolutely-positioned corner label pill, which
-     otherwise overlaps it on narrower tiles. */
-  padding: 0.5rem 0.5rem 2rem;
-  border-radius: var(--isdk-radius-lg);
-  background: var(--isdk-neutral-bg);
-  border: 1px solid var(--isdk-rule);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-  overflow: hidden;
+  flex-shrink: 0;
+  gap: 0.15rem;
 }
 
-/* Top-edge "who's live" strip — gold for the AI speaking, flag-red for the
-   candidate actually recording, matching the turn-pill's color language.
-   Colored only while active; otherwise fully transparent. */
-.isdk-question-card__ai-tile::before,
-.isdk-question-card__candidate-tile::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: transparent;
-  transition: background 0.2s ease;
+.isdk-question-card__party-meta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
-.isdk-question-card__ai-tile.isdk-question-card__tile--active {
-  border-color: var(--isdk-accent);
-  /* A soft ambient glow, not just a border-color swap — gives the tile
-     that's actually live real depth/presence instead of a flat outline. */
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--isdk-accent) 35%, transparent),
-    0 0 28px color-mix(in srgb, var(--isdk-accent) 22%, transparent);
+.isdk-question-card__party-meta--right {
+  align-items: flex-end;
 }
 
-.isdk-question-card__ai-tile.isdk-question-card__tile--active::before {
-  background: var(--isdk-accent);
-}
-
-.isdk-question-card__candidate-tile.isdk-question-card__tile--active {
-  border-color: var(--isdk-flag);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--isdk-flag) 35%, transparent),
-    0 0 28px color-mix(in srgb, var(--isdk-flag) 20%, transparent);
-}
-
-.isdk-question-card__candidate-tile.isdk-question-card__tile--active::before {
-  background: var(--isdk-flag);
-}
-
-.isdk-question-card__tile-status {
-  font-family: var(--isdk-font-mono);
-  font-size: 0.68rem;
+.isdk-question-card__party-name {
+  font-family: var(--isdk-font-display);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--isdk-ink-soft);
+  font-size: 0.86rem;
+  color: var(--isdk-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.isdk-question-card__candidate-tile.isdk-question-card__tile--active .isdk-question-card__tile-status {
-  color: var(--isdk-flag-text);
-}
-
-.isdk-question-card__ai-tile.isdk-question-card__tile--active .isdk-question-card__tile-status {
-  color: var(--isdk-accent-text);
-}
-
-.isdk-question-card__tile-label {
-  position: absolute;
-  bottom: 0.55rem;
-  left: 0.55rem;
+.isdk-question-card__party-status {
   font-family: var(--isdk-font-mono);
   font-size: 0.64rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--isdk-ink-soft);
-  background: color-mix(in srgb, var(--isdk-surface) 88%, transparent);
-  border: 1px solid var(--isdk-rule);
-  border-radius: 999px;
-  padding: 0.2rem 0.55rem;
+  transition: color 0.15s ease;
 }
 
-/* A real person's name reads as cold/system-y in an uppercase mono pill —
-   this is the one label spot where the warmer display face is right. */
-.isdk-question-card__tile-label--name {
-  font-family: var(--isdk-font-display);
-  font-size: 0.82rem;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--isdk-ink);
+.isdk-question-card__party--ai.isdk-question-card__party--active .isdk-question-card__party-status {
+  color: var(--isdk-accent-text);
 }
 
-.isdk-question-card__avatar {
+.isdk-question-card__party--candidate.isdk-question-card__party--active .isdk-question-card__party-status {
+  color: var(--isdk-flag-text);
+}
+
+/* The connecting thread between the two parties — a quiet, deliberate
+   detail rather than an animated waveform: three ticks on a hairline,
+   reading as "channel open" without competing with the question below. */
+.isdk-question-card__channel-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  flex: 1 1 auto;
+  min-width: 1.5rem;
+  height: 1px;
+  background: var(--isdk-rule);
+}
+
+.isdk-question-card__channel-link-dot {
+  flex-shrink: 0;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--isdk-ink-soft);
+  opacity: 0.5;
+}
+
+.isdk-question-card__avatar-mark {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: var(--isdk-surface);
   border: 1px solid var(--isdk-rule);
   font-family: var(--isdk-font-display);
   font-weight: 600;
-  font-size: 1.25rem;
+  font-size: 1rem;
   color: var(--isdk-ink-soft);
+  transition: box-shadow 0.2s ease;
 }
 
-.isdk-question-card__ai-tile .isdk-question-audio {
+.isdk-question-card__party--candidate.isdk-question-card__party--active .isdk-question-card__avatar-mark {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--isdk-flag) 22%, transparent);
+}
+
+.isdk-question-card__party--candidate .isdk-audio-meter {
+  position: absolute;
+  bottom: -0.3rem;
+  height: 14px;
+  gap: 2px;
+}
+
+.isdk-question-card__party--candidate .isdk-audio-meter span {
+  width: 2px;
+}
+
+/* The AI party reuses QuestionAudio wholesale (orb + play/replay control)
+   rather than forking its markup — scoped down to fit this slim strip
+   instead of the old large centered tile. */
+.isdk-question-card__party--ai .isdk-question-audio {
   flex-direction: column;
-  gap: 0.6rem;
+  align-items: center;
+  gap: 0.2rem;
   margin: 0;
 }
 
-.isdk-question-card__ai-tile .isdk-question-audio__orb {
-  width: 96px;
-  height: 96px;
+.isdk-question-card__party--ai .isdk-question-audio__orb {
+  width: 40px;
+  height: 40px;
 }
 
-.isdk-question-card__ai-tile .isdk-audio-meter {
-  height: 34px;
-  gap: 4px;
+.isdk-question-card__party--ai.isdk-question-card__party--active .isdk-question-audio__orb {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--isdk-accent) 22%, transparent),
+    var(--isdk-shadow);
 }
 
-.isdk-question-card__ai-tile .isdk-audio-meter span {
-  width: 4px;
+.isdk-question-card__party--ai .isdk-audio-meter {
+  height: 16px;
+  gap: 2px;
 }
 
-.isdk-question-card__ai-tile .isdk-btn--audio {
-  font-size: 0.74rem;
+.isdk-question-card__party--ai .isdk-audio-meter span {
+  width: 2px;
 }
 
-.isdk-question-card__candidate-tile .isdk-audio-meter {
-  height: 28px;
+.isdk-question-card__party--ai .isdk-btn--audio {
+  font-family: var(--isdk-font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--isdk-ink-soft);
+  white-space: nowrap;
+}
+
+.isdk-question-card__party--ai .isdk-btn--audio:hover:not(:disabled) {
+  color: var(--isdk-accent-text);
+  text-decoration: underline;
 }
 
 /* ---------- caption-style prompt ---------- */
 
 .isdk-question-card__caption {
-  margin: 0 0 1rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+  margin: 0 0 1.15rem;
 }
 
 .isdk-question-card__caption .isdk-question-card__prompt {
   margin: 0;
+}
+
+/* The question's own number, set like a plate/exhibit mark — this really is
+   a sequence the candidate moves through one at a time, so giving it real
+   typographic weight (instead of folding it into the small meta line above)
+   makes that legible at a glance, not just decorative numbering. */
+.isdk-question-card__index {
+  flex-shrink: 0;
+  font-family: var(--isdk-font-mono);
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--isdk-rule);
+  letter-spacing: -0.02em;
 }
 
 /* ---------- headings ---------- */
@@ -452,8 +500,9 @@
 .isdk-question-card__prompt {
   font-family: var(--isdk-font-display);
   font-weight: 600;
-  font-size: 1.3rem;
-  letter-spacing: -0.01em;
+  font-size: 1.65rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
   margin: 0 0 0.75rem;
 }
 
@@ -702,14 +751,38 @@
   padding: 0 0 0.5rem;
 }
 
+/* A real timecode readout, not a bare number — the dot pulses gently while
+   the session is live, echoing the "this becomes a record" framing the
+   channel strip above already sets up, without reusing "REC" itself (that
+   word is reserved for the mic actually recording, a separate state). */
 .isdk-question-card__timer {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--isdk-rule);
+  background: var(--isdk-neutral-bg);
+}
+
+.isdk-question-card__timer-label,
+.isdk-question-card__timer-value {
   font-family: var(--isdk-font-mono);
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   color: var(--isdk-ink-soft);
+}
+
+.isdk-question-card__timer-label {
+  display: inline;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.62rem;
+}
+
+.isdk-question-card__timer-value {
+  font-weight: 700;
+  color: var(--isdk-ink);
 }
 
 .isdk-question-card__timer-bar {
@@ -717,7 +790,7 @@
   width: 8.5rem;
   height: 2px;
   border-radius: 999px;
-  background: var(--isdk-neutral-bg);
+  background: var(--isdk-surface);
   overflow: hidden;
 }
 
@@ -1417,10 +1490,20 @@ body:has(.isdk-widget) {
 
 /* ---------- transcript chat (running AI/candidate conversation) ---------- */
 
+/* The transcript is the sidebar's main event — everything else (progress,
+   live signals) is flex-shrink: 0 and sized to its own content, so this
+   wrapper is what actually absorbs the sidebar's remaining height. */
+.isdk-transcript-chat-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .isdk-transcript-chat {
   list-style: none;
   margin: 0;
-  padding: 0.9rem 0;
+  padding: 0.75rem 0 0;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -1428,7 +1511,6 @@ body:has(.isdk-widget) {
   flex-direction: column;
   gap: 0.9rem;
   border-top: 1px solid var(--isdk-rule);
-  border-bottom: 1px solid var(--isdk-rule);
 }
 
 /* Keyboard-focusable so a keyboard-only user can actually scroll this
@@ -1530,65 +1612,94 @@ body:has(.isdk-widget) {
    shouldn't be able to shrink the transcript above it unpredictably. */
 .isdk-live-signals {
   flex-shrink: 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--isdk-rule);
 }
 
+/* A horizontal cluster of vertical meters — a mixing console's level
+   meters, not the "skill bar" every scoring UI defaults to — grown
+   bottom-up per dimension. Its height is bounded by the meter itself
+   (not by dimension count), so unlike the old horizontal-bar list, a
+   rubric with many dimensions grows this cluster sideways (scrolling)
+   rather than eating into the transcript's space above. */
 .isdk-live-signals__list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0.15rem 0.1rem 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.isdk-live-signals__meter {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  /* Same fix as .isdk-progress__list: bound this list's own height and
-     scroll it internally so a rubric with many dimensions can't eat into
-     the transcript's space above, the same way a long question list could. */
-  max-height: 9rem;
-  overflow-y: auto;
-}
-
-.isdk-live-signals__row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: 'label score' 'bar bar';
   align-items: center;
-  row-gap: 0.3rem;
-  column-gap: 0.5rem;
-}
-
-.isdk-live-signals__label {
-  grid-area: label;
-  font-size: 0.82rem;
-  color: var(--isdk-ink-soft);
+  gap: 0.45rem;
+  flex-shrink: 0;
+  width: 3.2rem;
 }
 
 .isdk-live-signals__score {
-  grid-area: score;
   font-family: var(--isdk-font-mono);
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--isdk-ink);
 }
 
-.isdk-live-signals__bar {
-  grid-area: bar;
+.isdk-live-signals__track {
+  position: relative;
   display: block;
-  height: 7px;
+  width: 0.8rem;
+  height: 4.75rem;
   border-radius: 999px;
   background: var(--isdk-neutral-bg);
-  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--isdk-ink) 12%, transparent);
+  box-shadow: inset 0 0 0 1px var(--isdk-rule);
   overflow: hidden;
 }
 
+/* Where a "pass" begins — the exact cutoff the final report itself uses to
+   call a dimension a strength (see STRENGTH_THRESHOLD), so a candidate or
+   reviewer can see whether a bar clears it without doing the math. */
+.isdk-live-signals__threshold {
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  height: 1px;
+  background: var(--isdk-ink-soft);
+  opacity: 0.5;
+  z-index: 1;
+}
+
 .isdk-live-signals__fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: block;
-  height: 100%;
   border-radius: inherit;
   background: linear-gradient(
-    to right,
-    color-mix(in srgb, var(--isdk-pass) 78%, transparent),
+    to top,
+    color-mix(in srgb, var(--isdk-pass) 45%, transparent),
     var(--isdk-pass)
   );
-  transition: width 0.4s ease;
+  transition: height 0.5s ease;
+}
+
+/* A quiet reward signal once a dimension actually clears the threshold —
+   a soft glow, not a color swap, so it stays legible for anyone not
+   distinguishing hue alone. */
+.isdk-live-signals__fill--pass {
+  box-shadow: 0 0 9px color-mix(in srgb, var(--isdk-pass) 55%, transparent);
+}
+
+.isdk-live-signals__label {
+  font-size: 0.66rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--isdk-ink-soft);
 }
 
 /* ---------- pre-join lobby ---------- */
@@ -1598,7 +1709,7 @@ body:has(.isdk-widget) {
   border: 1px solid var(--isdk-rule);
   border-radius: var(--isdk-radius);
   box-shadow: var(--isdk-shadow);
-  padding: var(--isdk-spacing);
+  padding: calc(var(--isdk-spacing) * 1.15);
   color: var(--isdk-ink);
   font-family: var(--isdk-font-body);
 }
@@ -1606,8 +1717,9 @@ body:has(.isdk-widget) {
 .isdk-lobby__title {
   font-family: var(--isdk-font-display);
   font-weight: 600;
-  font-size: 1.3rem;
-  letter-spacing: -0.01em;
+  font-size: 1.6rem;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
   margin: 0 0 0.5rem;
   text-wrap: balance;
 }
@@ -1720,8 +1832,32 @@ body:has(.isdk-widget) {
 
 /* ---------- score summary ---------- */
 
+/* The one number everything else on this report supports — given real
+   weight instead of folding into a sentence, like a verdict rather than a
+   line item. The per-dimension chips in the table below stay the small,
+   ordinary treatment; this is the sole exception, on purpose. */
 .isdk-score-summary__total {
-  margin: 0 0 1rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0 0 1.5rem;
+}
+
+.isdk-score-summary__total-label {
+  font-family: var(--isdk-font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--isdk-ink-soft);
+}
+
+.isdk-score-summary__total-value.isdk-chip {
+  font-size: 1.9rem;
+  font-weight: 700;
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--isdk-radius-sm);
+  letter-spacing: -0.02em;
 }
 
 .isdk-score-summary__table {
@@ -1802,13 +1938,24 @@ body:has(.isdk-widget) {
 }
 
 @media (max-width: 30rem) {
-  .isdk-question-card__stage {
-    grid-template-columns: 1fr;
+  /* The channel strip's own flex-wrap keeps both parties readable at this
+     width, but the name/status text has no room left next to a full-width
+     connector — dropping it keeps the avatars and their live state
+     (the only thing that changes turn to turn) instead of truncating text. */
+  .isdk-question-card__party-name {
+    display: none;
   }
 
-  .isdk-question-card__ai-tile,
-  .isdk-question-card__candidate-tile {
-    height: 160px;
+  .isdk-question-card__channel-link {
+    flex-basis: 1.5rem;
+  }
+
+  .isdk-question-card__index {
+    font-size: 1.3rem;
+  }
+
+  .isdk-question-card__prompt {
+    font-size: 1.35rem;
   }
 }
 

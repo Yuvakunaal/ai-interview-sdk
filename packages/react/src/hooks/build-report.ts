@@ -37,7 +37,8 @@ export interface InterviewReport {
   integritySignals?: IntegritySignals;
 }
 
-const STRENGTH_THRESHOLD = 75;
+/** Also used by LiveSignals to mark where a "pass" begins on its meters — one definition of "strong" shared across the live view and the final report. */
+export const STRENGTH_THRESHOLD = 75;
 const WEAKNESS_THRESHOLD = 40;
 
 /**

@@ -32,7 +32,7 @@ function entry(overrides: Partial<TranscriptEntry> = {}): TranscriptEntry {
 describe('TranscriptChat', () => {
   it('shows a placeholder when there is no transcript yet', () => {
     render(<TranscriptChat transcript={[]} />);
-    expect(screen.getByText('No messages yet.')).toBeInTheDocument();
+    expect(screen.getByText('Nothing recorded yet — this fills in as you answer.')).toBeInTheDocument();
   });
 
   it('renders the AI prompt and the candidate answer as separate messages', () => {
