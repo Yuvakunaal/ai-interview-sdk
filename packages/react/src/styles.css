@@ -1236,6 +1236,15 @@ body:has(.isdk-widget) {
 
 /* ---------- interview progress checklist ---------- */
 
+/* flex-shrink: 0, not the default 1 — this sits above the transcript in the
+   same flex column, and without this the flex algorithm would treat its
+   own natural height as negotiable and shrink it unpredictably as the
+   list below grows, instead of letting .isdk-progress__list's own
+   max-height/scroll (below) be the one thing that bounds its size. */
+.isdk-progress {
+  flex-shrink: 0;
+}
+
 .isdk-progress__list {
   list-style: none;
   margin: 0;
@@ -1243,6 +1252,14 @@ body:has(.isdk-widget) {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  /* A long interview (10+ questions) made this list's natural height grow
+     without bound, eating the sidebar's fixed height budget and squeezing
+     the transcript's flex: 1 area below down to a sliver — the more
+     questions, the worse it got. Capping this list's own height and
+     scrolling it internally keeps its footprint predictable regardless of
+     question count, so the transcript always gets its fair share. */
+  max-height: 11rem;
+  overflow-y: auto;
 }
 
 .isdk-progress__item {
@@ -1454,6 +1471,12 @@ body:has(.isdk-widget) {
 
 /* ---------- live signals ---------- */
 
+/* Same reasoning as .isdk-progress above — a rubric with many dimensions
+   shouldn't be able to shrink the transcript above it unpredictably. */
+.isdk-live-signals {
+  flex-shrink: 0;
+}
+
 .isdk-live-signals__list {
   list-style: none;
   margin: 0;
@@ -1461,6 +1484,11 @@ body:has(.isdk-widget) {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  /* Same fix as .isdk-progress__list: bound this list's own height and
+     scroll it internally so a rubric with many dimensions can't eat into
+     the transcript's space above, the same way a long question list could. */
+  max-height: 9rem;
+  overflow-y: auto;
 }
 
 .isdk-live-signals__row {
