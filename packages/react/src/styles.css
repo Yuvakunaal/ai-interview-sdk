@@ -308,7 +308,9 @@
   border-radius: var(--isdk-radius-lg);
   background: var(--isdk-neutral-bg);
   border: 1px solid var(--isdk-rule);
-  transition: border-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   overflow: hidden;
 }
 
@@ -329,6 +331,10 @@
 
 .isdk-question-card__ai-tile.isdk-question-card__tile--active {
   border-color: var(--isdk-accent);
+  /* A soft ambient glow, not just a border-color swap — gives the tile
+     that's actually live real depth/presence instead of a flat outline. */
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--isdk-accent) 35%, transparent),
+    0 0 28px color-mix(in srgb, var(--isdk-accent) 22%, transparent);
 }
 
 .isdk-question-card__ai-tile.isdk-question-card__tile--active::before {
@@ -337,6 +343,8 @@
 
 .isdk-question-card__candidate-tile.isdk-question-card__tile--active {
   border-color: var(--isdk-flag);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--isdk-flag) 35%, transparent),
+    0 0 28px color-mix(in srgb, var(--isdk-flag) 20%, transparent);
 }
 
 .isdk-question-card__candidate-tile.isdk-question-card__tile--active::before {
@@ -508,6 +516,21 @@
   height: 0.7rem;
 }
 
+/* Draws the checkmark once, the moment the report actually arrives —
+   16 comfortably covers this path's real length (~14.15 units) with a
+   small buffer, so the stroke fully resolves rather than clipping short. */
+.isdk-stamp svg path {
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  animation: isdk-stamp-draw 0.5s 0.15s ease-out forwards;
+}
+
+@keyframes isdk-stamp-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 /* ---------- score chips ---------- */
 
 .isdk-tabular {
@@ -600,11 +623,15 @@
   padding: 0.75rem;
   resize: vertical;
   margin-bottom: 0.85rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+/* Same soft glow ring the composer variant already uses below, rather than
+   a flat outline — one consistent "focused input" treatment everywhere. */
 .isdk-question-card__textarea:focus-visible {
-  outline: 2px solid var(--isdk-accent);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--isdk-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--isdk-accent) 25%, transparent);
 }
 
 /* Once voice is available, the mic becomes the primary control and the
@@ -1263,9 +1290,37 @@ body:has(.isdk-widget) {
 }
 
 .isdk-progress__item {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 0.6rem;
+}
+
+/* A connecting rail threading through the checklist, turning it from a flat
+   list into an actual timeline — this genuinely is a sequence (the
+   candidate moves through it in order), so a thread that solidifies behind
+   completed questions is real progress information, not decoration. Sized
+   and positioned off the icon's own box (1.2rem tall, 0.15rem top margin)
+   rather than a magic number, and its bottom edge lands exactly at the
+   gap's end so it meets the next item's icon without overlapping it.
+   Dashed/muted for ground not yet covered, solid pass-green for a question
+   actually answered — the line style itself carries meaning, not just color,
+   so it still reads correctly for anyone not distinguishing the two hues. */
+.isdk-progress__item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 1.35rem;
+  bottom: -0.85rem;
+  left: 0.6rem;
+  width: 0;
+  border-left: 2px dashed var(--isdk-ink-soft);
+  opacity: 0.4;
+}
+
+.isdk-progress__item--done:not(:last-child)::after {
+  border-left-style: solid;
+  border-left-color: var(--isdk-pass);
+  opacity: 1;
 }
 
 .isdk-progress__icon {
@@ -1777,6 +1832,10 @@ body:has(.isdk-widget) {
   }
   .isdk-progress__dot {
     animation: none;
+  }
+  .isdk-stamp svg path {
+    animation: none;
+    stroke-dashoffset: 0;
   }
   .isdk-btn--primary:hover:not(:disabled) {
     transform: none;
