@@ -1,5 +1,22 @@
 # @interview-sdk/react
 
+## 0.2.5
+
+### Patch Changes
+
+- 408c5a4: Fix unrelated earlier questions leaking into a later question's AI evaluation context.
+
+  Found via a real production integration: `useInterview` was passing the _entire_ interview transcript so far as `previousTurns` context for every evaluation call, not just the current question's own follow-up history. In a longer interview this meant, by question 4 or 5, the AI was handed several unrelated prior answers (in one observed case, duplicate/off-topic text) in the same request — despite the evaluation prompt explicitly telling it to ignore earlier answers. That noise was enough to make a real provider misjudge a genuinely good, on-topic final answer as a non-answer.
+
+  `previousTurns` is now scoped to only the current question's own turns (i.e. its own prior follow-ups) — a brand-new top-level question correctly starts with no prior context, and a follow-up still correctly sees its own question's original answer.
+
+- b84debd: Polish the interview UI's visual details — no structural or behavioral changes, pure CSS.
+
+  - **The "Interview progress" checklist is now an actual timeline**, not just a flat list: a connecting rail threads through it, dashed and muted for ground not yet covered, solid pass-green for a question actually answered — the line style itself carries meaning, not just its color.
+  - **The live AI/candidate tiles get a soft ambient glow** while actually speaking/recording, instead of just a border-color swap — more depth and presence for whichever side currently has the floor.
+  - **The plain (non-composer) answer textarea's focus state** now matches the nicer glow ring the composer variant already used, instead of a flat 2px outline — one consistent "focused input" treatment everywhere.
+  - **The report's "Complete" stamp draws its checkmark in** the moment the report actually arrives, instead of appearing fully-formed and static — a small, real completion moment. Respects `prefers-reduced-motion`.
+
 ## 0.2.4
 
 ### Patch Changes

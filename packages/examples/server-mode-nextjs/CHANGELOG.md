@@ -1,5 +1,13 @@
 # @interview-sdk/example-server-mode-nextjs
 
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies [408c5a4]
+- Updated dependencies [b84debd]
+  - @interview-sdk/react@0.2.5
+
 ## 0.0.7
 
 ### Patch Changes
