@@ -1,7 +1,7 @@
 {
   "name": "@interview-sdk/dashboard",
   "private": true,
-  "version": "0.0.6",
+  "version": "0.0.7",
   "type": "module",
   "description": "Local customize-and-copy-code UI, built to static assets and served by `interview-sdk dashboard` (@interview-sdk/cli). Never published.",
   "scripts": {
