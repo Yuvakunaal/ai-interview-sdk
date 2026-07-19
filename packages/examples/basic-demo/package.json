@@ -1,7 +1,7 @@
 {
   "name": "@interview-sdk/example-basic-demo",
   "private": true,
-  "version": "0.0.7",
+  "version": "0.0.8",
   "type": "module",
   "description": "Runnable browser demo of <InterviewWidget /> using a mock adapter (no API keys required).",
   "scripts": {
