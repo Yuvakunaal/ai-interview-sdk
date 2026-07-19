@@ -110,6 +110,60 @@ describe('useInterview', () => {
     expect(result.current.isFollowUpPrompt).toBe(true);
   });
 
+  it('does not leak an unrelated earlier question into a later question\'s previousTurns', async () => {
+    const processor = fakeProcessor([
+      { evaluation: evaluation({ totalScore: 95 }) },
+      { evaluation: evaluation({ totalScore: 10 }) },
+    ]);
+    const { result } = renderHook(() => useInterview({ questions, rubric, processor }));
+
+    act(() => result.current.start());
+    await act(async () => {
+      await result.current.submitAnswer('It uses buckets.');
+    });
+    await waitFor(() => expect(result.current.currentQuestion?.id).toBe('q2'));
+
+    await act(async () => {
+      await result.current.submitAnswer('It halves the search space each time.');
+    });
+    await waitFor(() => expect(processor.processAnswer).toHaveBeenCalledTimes(2));
+
+    // q2 is a brand-new top-level question with no relationship to q1 — it
+    // must not be handed q1's answer as conversational context, the way the
+    // whole prior transcript used to be included unconditionally.
+    const secondCallInput = vi.mocked(processor.processAnswer).mock.calls[1]![0];
+    expect(secondCallInput.previousTurns).toEqual([]);
+  });
+
+  it('includes this question\'s own prior turn as previousTurns context for its follow-up', async () => {
+    const processor = fakeProcessor([
+      {
+        evaluation: evaluation({ totalScore: 40 }),
+        followUp: { prompt: 'Can you say more about hashing?', targetsMissedConcepts: ['hashing'] },
+      },
+      { evaluation: evaluation({ totalScore: 60 }) },
+    ]);
+    const { result } = renderHook(() => useInterview({ questions, rubric, processor }));
+
+    act(() => result.current.start());
+    await act(async () => {
+      await result.current.submitAnswer('Not sure.');
+    });
+    await waitFor(() => expect(result.current.isFollowUpPrompt).toBe(true));
+
+    await act(async () => {
+      await result.current.submitAnswer('Buckets and chaining.');
+    });
+    await waitFor(() => expect(processor.processAnswer).toHaveBeenCalledTimes(2));
+
+    // The follow-up is still fundamentally about q1, so its own original
+    // answer is exactly the context the model should see for the follow-up.
+    const secondCallInput = vi.mocked(processor.processAnswer).mock.calls[1]![0];
+    expect(secondCallInput.previousTurns).toEqual([
+      { question: questions[0], answer: expect.objectContaining({ text: 'Not sure.' }) },
+    ]);
+  });
+
   it('builds and reports the final report once the last question is answered', async () => {
     const onSessionEnd = vi.fn();
     const processor = fakeProcessor([{ evaluation: evaluation({ totalScore: 100 }) }]);

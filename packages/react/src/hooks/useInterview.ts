@@ -281,10 +281,23 @@ export function useInterview(options: UseInterviewOptions): UseInterviewResult {
       const question = options.questions[nextState.currentQuestionIndex];
       if (!question) return;
 
-      const previousTurns: EvaluationTurn[] = transcript.map((entry) => ({
-        question: entry.question,
-        answer: entry.answer,
-      }));
+      // Only this question's own prior turns (i.e. earlier follow-ups on the
+      // same question) belong here — every unrelated question answered
+      // earlier in the interview was previously included too, which grew
+      // unbounded over a long interview and, worse, actively confused
+      // evaluation: by question 5 or so the model was handed several
+      // unrelated (sometimes duplicate-text) prior answers in the same
+      // request despite the system prompt telling it to ignore them, and
+      // real testing showed that noise was enough to make it misjudge a
+      // perfectly good final answer. A brand-new top-level question
+      // correctly gets an empty array here — there's no earlier turn to
+      // provide context from yet.
+      const previousTurns: EvaluationTurn[] = transcript
+        .filter((entry) => entry.question.id === question.id)
+        .map((entry) => ({
+          question: entry.question,
+          answer: entry.answer,
+        }));
 
       const pending: PendingProcessAnswer = {
         question,
