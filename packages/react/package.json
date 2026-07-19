@@ -1,6 +1,6 @@
 {
   "name": "@interview-sdk/react",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "React components and hooks for embedding AI-powered interviews: InterviewWidget, MicButton, QuestionCard, ReportCard, TranscriptViewer, ScoreSummary.",
   "license": "MIT",
   "type": "module",
