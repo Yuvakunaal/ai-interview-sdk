@@ -63,8 +63,8 @@ importers:
   packages/adapters/adapter-deepgram:
     dependencies:
       '@deepgram/sdk':
-        specifier: ^5.5.0
-        version: 5.5.0
+        specifier: ^5.6.0
+        version: 5.6.0
       '@interview-sdk/core':
         specifier: workspace:*
         version: link:../../core
@@ -94,7 +94,7 @@ importers:
         version: link:../../core
       openai:
         specifier: ^6.48.0
-        version: 6.48.0(ws@8.21.0)(zod@4.4.3)
+        version: 6.48.0(ws@8.21.1)(zod@4.4.3)
 
   packages/cli:
     dependencies:
@@ -221,7 +221,7 @@ importers:
         version: link:../../react
       openai:
         specifier: ^6.48.0
-        version: 6.48.0(ws@8.21.0)(zod@4.4.3)
+        version: 6.48.0(ws@8.21.1)(zod@4.4.3)
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -568,8 +568,8 @@ packages:
     resolution: {integrity: sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA==}
     engines: {node: '>=20.19.0'}
 
-  '@deepgram/sdk@5.5.0':
-    resolution: {integrity: sha512-9x3hwDuG9ysMwugklHX1Ta8Rg6NuZE4kByRB7OM5w3dvdwNxW6X+eDiGHga44eF5d51KD0w54pPa+7GGb84t7w==}
+  '@deepgram/sdk@5.6.0':
+    resolution: {integrity: sha512-vRe5F72qH6+XQW+/6LzFpIqYWQfw97ACIRnGHhEofSd/En7U231AyPnMN1AGTejasI0SgkwbkzmxxpJv1e31nA==}
     engines: {node: '>=18.0.0'}
 
   '@elevenlabs/elevenlabs-js@2.58.0':
@@ -3562,6 +3562,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.21.1:
+    resolution: {integrity: sha512-+0NTnW77fFN/DjQi6k/Sq/Yvk4Sgajw7urW8V+asjXnRgDs9gyGkdb7EzgfhA4goXsRIZKE28fzIXBHEzhuiWw==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
     engines: {node: '>=18'}
@@ -3899,9 +3911,9 @@ snapshots:
 
   '@csstools/css-tokenizer@4.0.0': {}
 
-  '@deepgram/sdk@5.5.0':
+  '@deepgram/sdk@5.6.0':
     dependencies:
-      ws: 8.21.0
+      ws: 8.21.1
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -6070,9 +6082,9 @@ snapshots:
       regex: 6.1.0
       regex-recursion: 6.0.2
 
-  openai@6.48.0(ws@8.21.0)(zod@4.4.3):
+  openai@6.48.0(ws@8.21.1)(zod@4.4.3):
     optionalDependencies:
-      ws: 8.21.0
+      ws: 8.21.1
       zod: 4.4.3
 
   optionator@0.9.4:
@@ -6925,6 +6937,8 @@ snapshots:
   word-wrap@1.2.5: {}
 
   ws@8.21.0: {}
+
+  ws@8.21.1: {}
 
   xml-name-validator@5.0.0: {}
 
