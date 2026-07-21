@@ -81,8 +81,8 @@ importers:
   packages/adapters/adapter-gemini:
     dependencies:
       '@google/genai':
-        specifier: ^2.11.0
-        version: 2.11.0
+        specifier: ^2.12.0
+        version: 2.12.0
       '@interview-sdk/core':
         specifier: workspace:*
         version: link:../../core
@@ -94,7 +94,7 @@ importers:
         version: link:../../core
       openai:
         specifier: ^6.48.0
-        version: 6.48.0(ws@8.21.0)(zod@4.4.3)
+        version: 6.48.0(ws@8.21.1)(zod@4.4.3)
 
   packages/cli:
     dependencies:
@@ -221,7 +221,7 @@ importers:
         version: link:../../react
       openai:
         specifier: ^6.48.0
-        version: 6.48.0(ws@8.21.0)(zod@4.4.3)
+        version: 6.48.0(ws@8.21.1)(zod@4.4.3)
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -789,8 +789,8 @@ packages:
       '@noble/hashes':
         optional: true
 
-  '@google/genai@2.11.0':
-    resolution: {integrity: sha512-d2Csf29vS0GfHc52H0MG25ccY4FKvvbDgqDlEovLrPLF8sPegWr/GGO+LMOy85/1SnX0iV0zDAW7R8SsvWg8Vg==}
+  '@google/genai@2.12.0':
+    resolution: {integrity: sha512-LUr972DZosqPUhf9Mb3CIVu/B99woD3QW6ZJV1T9aNgxaoimAZARmo+IyyDsxIL+zouFiYSdA4hzfEWXc9oNIQ==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       '@modelcontextprotocol/sdk': ^1.25.2
@@ -3562,6 +3562,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.21.1:
+    resolution: {integrity: sha512-+0NTnW77fFN/DjQi6k/Sq/Yvk4Sgajw7urW8V+asjXnRgDs9gyGkdb7EzgfhA4goXsRIZKE28fzIXBHEzhuiWw==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
     engines: {node: '>=18'}
@@ -4046,12 +4058,12 @@ snapshots:
 
   '@exodus/bytes@1.15.1': {}
 
-  '@google/genai@2.11.0':
+  '@google/genai@2.12.0':
     dependencies:
       google-auth-library: 10.9.0
       p-retry: 4.6.2
       protobufjs: 7.6.5
-      ws: 8.21.0
+      ws: 8.21.1
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -6070,9 +6082,9 @@ snapshots:
       regex: 6.1.0
       regex-recursion: 6.0.2
 
-  openai@6.48.0(ws@8.21.0)(zod@4.4.3):
+  openai@6.48.0(ws@8.21.1)(zod@4.4.3):
     optionalDependencies:
-      ws: 8.21.0
+      ws: 8.21.1
       zod: 4.4.3
 
   optionator@0.9.4:
@@ -6925,6 +6937,8 @@ snapshots:
   word-wrap@1.2.5: {}
 
   ws@8.21.0: {}
+
+  ws@8.21.1: {}
 
   xml-name-validator@5.0.0: {}
 
