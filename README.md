@@ -1,6 +1,6 @@
 # AI Interview SDK
 
-[![npm](https://img.shields.io/npm/v/@interview-sdk/core.svg?label=npm)](https://www.npmjs.com/package/@interview-sdk/core)
+[![npm](https://img.shields.io/npm/v/@interview-sdk/core.svg?label=npm&logo=npm&logoColor=CB3837)](https://www.npmjs.com/package/@interview-sdk/core)
 [![CI](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/codeql.yml/badge.svg)](https://github.com/Yuvakunaal/ai-interview-sdk/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
