@@ -97,7 +97,7 @@ const SPEC_ROWS: SpecRow[] = [
 ];
 
 const GITHUB_URL = 'https://github.com/Yuvakunaal/ai-interview-sdk';
-const NPM_URL = 'https://www.npmjs.com/package/@interview-sdk/core';
+const NPM_URL = 'https://www.npmjs.com/org/interview-sdk';
 
 export function App() {
   const [menuOpen, setMenuOpen] = useState(false);
